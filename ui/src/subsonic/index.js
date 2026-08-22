@@ -129,6 +129,12 @@ const getTopSongs = (artist, count = 50) => {
   return httpClient(url('getTopSongs', null, { artist, count }))
 }
 
+// Fetches OpenSubsonic songLyrics v2 data. enhanced=true is what unlocks
+// cueLine[] (word/syllable timing), agents[] and the translation/pronunciation
+// tracks; without it the server filters down to main-kind, line-level only.
+const getLyricsBySongId = (id) =>
+  httpClient(url('getLyricsBySongId', id, { enhanced: true }))
+
 const streamUrl = (id, options) => {
   return baseUrl(
     url('stream', id, {
@@ -158,4 +164,5 @@ export default {
   getArtistInfo,
   getTopSongs,
   getSimilarSongs2,
+  getLyricsBySongId,
 }

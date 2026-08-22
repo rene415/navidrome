@@ -4,7 +4,7 @@ import { useGetOne } from 'react-admin'
 import { GlobalHotKeys } from 'react-hotkeys'
 import IconButton from '@material-ui/core/IconButton'
 import { useMediaQuery } from '@material-ui/core'
-import { RiSaveLine } from 'react-icons/ri'
+import { RiFileList2Line, RiSaveLine } from 'react-icons/ri'
 import { LoveButton, useToggleLove } from '../common'
 import { openSaveQueueDialog } from '../actions'
 import { keyMap } from '../hotkeys'
@@ -55,7 +55,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }))
 
-const PlayerToolbar = ({ id, isRadio }) => {
+const PlayerToolbar = ({ id, isRadio, lyricsOpen, onToggleLyrics }) => {
   const dispatch = useDispatch()
   const { data, loading } = useGetOne('song', id, { enabled: !!id && !isRadio })
   const [toggleLove, toggling] = useToggleLove('song', data)
@@ -89,6 +89,25 @@ const PlayerToolbar = ({ id, isRadio }) => {
     </IconButton>
   )
 
+  const lyricsButton = (
+    <IconButton
+      size={isDesktop ? 'small' : undefined}
+      onClick={(e) => {
+        onToggleLyrics && onToggleLyrics()
+        e.stopPropagation()
+      }}
+      disabled={isRadio || !id}
+      aria-pressed={!!lyricsOpen}
+      data-testid="lyrics-button"
+      className={buttonClass}
+    >
+      <RiFileList2Line
+        className={!isDesktop ? classes.mobileIcon : undefined}
+        style={{ opacity: lyricsOpen ? 1 : 0.6 }}
+      />
+    </IconButton>
+  )
+
   const loveButton = (
     <LoveButton
       record={data}
@@ -104,11 +123,13 @@ const PlayerToolbar = ({ id, isRadio }) => {
       <GlobalHotKeys keyMap={keyMap} handlers={handlers} allowChanges />
       {isDesktop ? (
         <li className={`${listItemClass} item`}>
+          {lyricsButton}
           {saveQueueButton}
           {loveButton}
         </li>
       ) : (
         <>
+          <li className={`${listItemClass} item`}>{lyricsButton}</li>
           <li className={`${listItemClass} item`}>{saveQueueButton}</li>
           <li className={`${listItemClass} item`}>{loveButton}</li>
         </>

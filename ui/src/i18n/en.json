@@ -52,6 +52,13 @@
         "playNext": "Play Next",
         "info": "Get Info",
         "instantMix": "Instant Mix"
+      },
+      "lyrics": {
+        "loading": "Loading lyrics...",
+        "notFound": "No lyrics found for this track",
+        "translation": "Translation",
+        "romanization": "Romanization",
+        "showLyrics": "Show lyrics"
       }
     },
     "album": {

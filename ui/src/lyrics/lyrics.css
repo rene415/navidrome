@@ -1,0 +1,150 @@
+/* Better-Lyrics style karaoke renderer.
+ *
+ * Per-frame values are written as CSS custom properties directly on the DOM
+ * nodes by a requestAnimationFrame loop, never through React state. Re-rendering
+ * a few hundred spans sixty times a second would drop frames; mutating two
+ * custom properties does not.
+ *
+ *   --bl-p  word wipe progress, 0..1, on a timed segment
+ *   --bl-d  distance in lines from the active line, on a line
+ */
+
+.bl-root {
+  --bl-sung: var(--bl-sung-color, #fff);
+  --bl-unsung: var(--bl-unsung-color, rgba(255, 255, 255, 0.32));
+  display: flex;
+  flex-direction: column;
+  gap: 1.1em;
+  padding: 2rem 1.5rem;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: left;
+}
+
+.bl-line {
+  cursor: pointer;
+  transform-origin: left center;
+  transition:
+    opacity 320ms ease,
+    filter 320ms ease,
+    transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+  /* Lines fade and defocus with distance from the active line, which is what
+   * gives the view its depth. Clamped so far-off lines stay readable. */
+  opacity: calc(1 - min(var(--bl-d, 4) * 0.18, 0.62));
+  filter: blur(calc(min(var(--bl-d, 0) * 0.6px, 2.4px)));
+  color: var(--bl-unsung);
+}
+
+.bl-line:hover {
+  opacity: 0.95;
+  filter: none;
+}
+
+.bl-line.bl-active {
+  opacity: 1;
+  filter: none;
+  transform: scale(1.04);
+  color: var(--bl-sung);
+}
+
+/* A line already sung stays legible but recedes, so the eye is pulled forward. */
+.bl-line.bl-past {
+  color: var(--bl-unsung);
+}
+
+/* Word-level wipe. The gradient hard-stops at the progress point, so the
+ * sung portion of the word is filled and the rest is not. background-clip:text
+ * paints that gradient through the glyphs themselves. */
+.bl-seg {
+  background-image: linear-gradient(
+    90deg,
+    var(--bl-sung) 0%,
+    var(--bl-sung) calc(var(--bl-p, 0) * 100%),
+    var(--bl-unsung) calc(var(--bl-p, 0) * 100%),
+    var(--bl-unsung) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  /* Nudge the active syllable up very slightly as it lands. */
+  transition: text-shadow 200ms ease;
+}
+
+.bl-active .bl-seg[data-lit='1'] {
+  text-shadow: 0 0 18px rgba(255, 255, 255, 0.35);
+}
+
+/* Lines with no word timing fall back to whole-line highlighting. */
+.bl-line.bl-lineonly.bl-active {
+  color: var(--bl-sung);
+}
+
+.bl-secondary {
+  display: block;
+  font-size: 0.62em;
+  font-weight: 600;
+  margin-top: 0.28em;
+  opacity: 0.72;
+  color: var(--bl-unsung);
+  filter: none;
+}
+
+.bl-romanization {
+  font-style: normal;
+  letter-spacing: 0.01em;
+}
+
+.bl-translation {
+  font-style: italic;
+}
+
+/* Background vocals sit smaller and indented, mirroring how the TTML marks
+ * them with a distinct agent role. */
+.bl-line.bl-bg {
+  font-size: 0.78em;
+  padding-left: 1.4em;
+  opacity: calc(0.72 - min(var(--bl-d, 4) * 0.14, 0.5));
+}
+
+.bl-status {
+  opacity: 0.6;
+  font-size: 0.95rem;
+  font-weight: 500;
+  padding: 2rem 1.5rem;
+}
+
+.bl-toolbar {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.5rem 1.5rem 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.bl-chip {
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 0.15em 0.7em;
+  cursor: pointer;
+  opacity: 0.55;
+  background: none;
+  color: inherit;
+  font: inherit;
+}
+
+.bl-chip[aria-pressed='true'] {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bl-root {
+    scroll-behavior: auto;
+  }
+  .bl-line {
+    transition: none;
+  }
+}
