@@ -5,7 +5,11 @@
 // self-hosted on the same network, so lyric lines never leave it — that is the
 // whole reason for preferring LibreTranslate over a hosted API here.
 
-const DEFAULT_ENDPOINT = 'http://localhost:5555'
+// Must NOT be localhost. This code runs in the visitor's browser, not on the
+// server, so 'localhost' resolves to whatever machine is viewing the page and
+// the request dies with a connection refused. Default to the host serving
+// Navidrome, which is where the LibreTranslate container also lives.
+const DEFAULT_ENDPOINT = `${window.location.protocol}//${window.location.hostname}:5555`
 const CACHE_PREFIX = 'bl-tr:'
 const CACHE_LIMIT = 400
 

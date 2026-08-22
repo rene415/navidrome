@@ -2,13 +2,17 @@
  *
  * Per-frame values are written as CSS custom properties directly on the DOM
  * nodes by a requestAnimationFrame loop, never through React state. Re-rendering
- * a few hundred spans sixty times a second would drop frames; mutating two
- * custom properties does not.
+ * a few hundred spans sixty times a second would drop frames; mutating one
+ * custom property does not.
  *
  *   --bl-p  word wipe progress, 0..1, on a timed segment
- *   --bl-d  distance in lines from the active line, on a line
  */
 
+/* Scroll ownership sits here, on a FULL-WIDTH element, while the readable
+ * column is created by max-width on the lines themselves. Previously this
+ * element was both the scroller and the centred column, which parked its
+ * scrollbar in empty space two-thirds across the screen. Better Lyrics avoids
+ * the same problem by never owning a scroller at all. */
 .bl-root {
   --bl-sung: var(--bl-sung-color, #fff);
   --bl-unsung: var(--bl-unsung-color, rgba(255, 255, 255, 0.32));
@@ -16,56 +20,47 @@
   flex-direction: column;
   align-items: center;
   gap: 1.1em;
-  /* min-width:0 is load-bearing. As a flex item this element defaults to
-   * min-width:auto, which refuses to shrink below its widest child - a long
-   * unwrapped lyric line then stretched it far past the viewport (measured at
-   * 2529px in a 1568px window), pinning the text to the left edge and pushing
-   * the padding off-screen entirely. */
   min-width: 0;
   width: 100%;
-  /* Centred column with a readable measure rather than full-bleed text. */
-  max-width: 54rem;
-  margin: 0 auto;
-  padding: 2.5rem clamp(1.25rem, 4vw, 3rem) 40vh;
+  padding: 2.5rem clamp(1.25rem, 4vw, 3rem) 45vh;
   overflow-y: auto;
   overflow-x: hidden;
   scroll-behavior: smooth;
-  font-size: 1.6rem;
+  /* Fluid type: a fixed size looked undersized on a 2560px display. */
+  font-size: clamp(1.25rem, 1.9vw, 2.1rem);
   font-weight: 700;
-  line-height: 1.35;
+  line-height: 1.4;
   text-align: center;
 }
 
 .bl-line {
   cursor: pointer;
+  /* The centred readable column. */
   width: 100%;
-  /* Long words (URLs, run-on CJK) must wrap rather than widen the column. */
+  max-width: 54rem;
+  margin: 0 auto;
   overflow-wrap: break-word;
   transform-origin: center;
-  transition:
-    opacity 320ms ease,
-    filter 320ms ease,
-    transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
-  /* Lines fade and defocus with distance from the active line, which is what
-   * gives the view its depth. Clamped so far-off lines stay readable. */
-  opacity: calc(1 - min(var(--bl-d, 4) * 0.18, 0.62));
-  filter: blur(calc(min(var(--bl-d, 0) * 0.6px, 2.4px)));
+  /* No blur and no distance-based opacity. Measured directly on Better Lyrics:
+   * inactive lines are opacity:1 / filter:none, and the entire visual hierarchy
+   * comes from word colour plus a scale transform. The old distance-blur ramp
+   * was costing legibility without buying the look it was imitating. */
+  opacity: 1;
   color: var(--bl-unsung);
-}
-
-.bl-line:hover {
-  opacity: 0.95;
-  filter: none;
+  transform: scale(0.97);
+  transition:
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 220ms ease;
+  will-change: transform;
 }
 
 .bl-line.bl-active {
-  opacity: 1;
-  filter: none;
-  transform: scale(1.04);
+  transform: scale(1);
   color: var(--bl-sung);
 }
 
-/* A line already sung stays legible but recedes, so the eye is pulled forward. */
+/* A line already sung recedes to the unsung colour, so the eye is pulled
+ * forward rather than lingering on what has passed. */
 .bl-line.bl-past {
   color: var(--bl-unsung);
 }
@@ -84,10 +79,10 @@
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  /* Nudge the active syllable up very slightly as it lands. */
   transition: text-shadow 200ms ease;
 }
 
+/* Glow the syllable currently sounding, not the whole line. */
 .bl-active .bl-seg[data-lit='1'] {
   text-shadow: 0 0 18px rgba(255, 255, 255, 0.35);
 }
@@ -104,7 +99,6 @@
   margin-top: 0.28em;
   opacity: 0.72;
   color: var(--bl-unsung);
-  filter: none;
 }
 
 .bl-romanization {
@@ -116,11 +110,11 @@
   font-style: italic;
 }
 
-/* Background vocals sit smaller and indented, mirroring how the TTML marks
- * them with a distinct agent role. */
+/* Background vocals sit smaller, mirroring how the TTML marks them with a
+ * distinct agent role. */
 .bl-line.bl-bg {
   font-size: 0.78em;
-  opacity: calc(0.72 - min(var(--bl-d, 4) * 0.14, 0.5));
+  opacity: 0.72;
 }
 
 .bl-status {
@@ -160,5 +154,9 @@
   }
   .bl-line {
     transition: none;
+    transform: none;
+  }
+  .bl-line.bl-active {
+    transform: none;
   }
 }
