@@ -1,4 +1,3 @@
-import { baseUrl } from '../utils'
 
 // Client-side romanization for Japanese lyrics.
 //
@@ -52,7 +51,12 @@ const loadConverter = () => {
     const instance = new Kuroshiro()
     // The dictionary is served as a static asset out of ui/public, so it must
     // go through baseUrl to survive a subpath deployment.
-    await instance.init(new KuromojiAnalyzer({ dictPath: baseUrl('/kuromoji/dict') }))
+    // Resolve against document.baseURI, not a root-relative path. The UI is
+    // served under /app/, so baseUrl('/kuromoji/dict') produced
+    // /kuromoji/dict/... which 404s - the dictionary actually lives at
+    // /app/kuromoji/dict/.
+    const dictPath = new URL('kuromoji/dict', document.baseURI).href
+    await instance.init(new KuromojiAnalyzer({ dictPath }))
     return instance
   })().catch((err) => {
     // Let a later attempt retry rather than caching a permanent failure.
