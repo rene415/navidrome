@@ -27,6 +27,7 @@ import {
   syncQueue,
 } from '../actions'
 import PlayerToolbar from './PlayerToolbar'
+import LyricsPanel from '../lyrics/LyricsPanel'
 import { sendNotification } from '../utils'
 import subsonic from '../subsonic'
 import locale from './locale'
@@ -48,6 +49,7 @@ const Player = () => {
   const currentTrackIdRef = useRef(null)
   const stoppedRef = useRef(false)
   const [audioInstance, setAudioInstance] = useState(null)
+  const [lyricsOpen, setLyricsOpen] = useState(false)
   const isDesktop = useMediaQuery('(min-width:810px)')
   const isMobilePlayer =
     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
@@ -251,12 +253,17 @@ const Player = () => {
         (playerState.clear || playerState.playIndex === 0),
       clearPriorAudioLists: playerState.clear,
       extendsContent: (
-        <PlayerToolbar id={current.trackId} isRadio={current.isRadio} />
+        <PlayerToolbar
+          id={current.trackId}
+          isRadio={current.isRadio}
+          lyricsOpen={lyricsOpen}
+          onToggleLyrics={() => setLyricsOpen((v) => !v)}
+        />
       ),
       defaultVolume: isMobilePlayer ? 1 : playerState.volume,
       showMediaSession: !current.isRadio,
     }
-  }, [playerState, defaultOptions, isMobilePlayer])
+  }, [playerState, defaultOptions, isMobilePlayer, lyricsOpen])
 
   const onAudioListsChange = useCallback(
     (_, audioLists, audioInfo) => dispatch(syncQueue(audioInfo, audioLists)),
@@ -470,6 +477,14 @@ const Player = () => {
         onAudioError={onAudioError}
         onBeforeDestroy={onBeforeDestroy}
         getAudioInstance={setAudioInstance}
+      />
+      <LyricsPanel
+        open={lyricsOpen}
+        onClose={() => setLyricsOpen(false)}
+        audioInstance={audioInstance}
+        trackId={playerState.current?.trackId}
+        title={playerState.current?.name}
+        artist={playerState.current?.singer}
       />
       <GlobalHotKeys handlers={handlers} keyMap={keyMap} allowChanges />
     </ThemeProvider>
