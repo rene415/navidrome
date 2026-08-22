@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslate } from 'react-admin'
 import { useLyrics } from './useLyrics'
+import { useLyricsEnrichment } from './useLyricsEnrichment'
 import './lyrics.css'
 
 // How far ahead of the active line to keep the scroll position, as a fraction
@@ -30,8 +31,17 @@ const LyricsView = ({ audioInstance, trackId }) => {
   const translate = useTranslate()
   const { loading, lyrics } = useLyrics(trackId)
 
-  const [showTranslation, setShowTranslation] = useState(true)
-  const [showRomanization, setShowRomanization] = useState(true)
+  const [showTranslation, setShowTranslation] = useState(false)
+  const [showRomanization, setShowRomanization] = useState(false)
+
+  const { romaji, translation, canRomanize, canTranslate } = useLyricsEnrichment(
+    lyrics,
+    {
+      romanize: showRomanization,
+      translate: showTranslation,
+      targetLang: undefined,
+    },
+  )
 
   const rootRef = useRef(null)
   const lineRefs = useRef([])
@@ -151,9 +161,12 @@ const LyricsView = ({ audioInstance, trackId }) => {
 
   return (
     <>
-      {(lyrics.hasTranslation || lyrics.hasRomanization) && (
+      {(lyrics.hasTranslation ||
+        lyrics.hasRomanization ||
+        canRomanize ||
+        canTranslate) && (
         <div className="bl-toolbar">
-          {lyrics.hasRomanization && (
+          {(lyrics.hasRomanization || canRomanize) && (
             <button
               type="button"
               className="bl-chip"
@@ -161,9 +174,10 @@ const LyricsView = ({ audioInstance, trackId }) => {
               onClick={() => setShowRomanization((v) => !v)}
             >
               {translate('resources.song.lyrics.romanization')}
+              {romaji.loading ? '...' : ''}
             </button>
           )}
-          {lyrics.hasTranslation && (
+          {(lyrics.hasTranslation || canTranslate) && (
             <button
               type="button"
               className="bl-chip"
@@ -171,6 +185,7 @@ const LyricsView = ({ audioInstance, trackId }) => {
               onClick={() => setShowTranslation((v) => !v)}
             >
               {translate('resources.song.lyrics.translation')}
+              {translation.loading ? '...' : ''}
             </button>
           )}
         </div>
@@ -218,12 +233,20 @@ const LyricsView = ({ audioInstance, trackId }) => {
                   )}
                 </span>
 
-                {variantIndex === 0 && showRomanization && line.romanization && (
-                  <span className="bl-secondary bl-romanization">{line.romanization}</span>
-                )}
-                {variantIndex === 0 && showTranslation && line.translation && (
-                  <span className="bl-secondary bl-translation">{line.translation}</span>
-                )}
+                {variantIndex === 0 &&
+                  showRomanization &&
+                  (line.romanization || romaji.values[lineIndex]) && (
+                    <span className="bl-secondary bl-romanization">
+                      {line.romanization || romaji.values[lineIndex]}
+                    </span>
+                  )}
+                {variantIndex === 0 &&
+                  showTranslation &&
+                  (line.translation || translation.values[lineIndex]) && (
+                    <span className="bl-secondary bl-translation">
+                      {line.translation || translation.values[lineIndex]}
+                    </span>
+                  )}
               </div>
             )
           })
