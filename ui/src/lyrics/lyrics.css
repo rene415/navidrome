@@ -14,19 +14,34 @@
   --bl-unsung: var(--bl-unsung-color, rgba(255, 255, 255, 0.32));
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 1.1em;
-  padding: 2rem 1.5rem;
+  /* min-width:0 is load-bearing. As a flex item this element defaults to
+   * min-width:auto, which refuses to shrink below its widest child - a long
+   * unwrapped lyric line then stretched it far past the viewport (measured at
+   * 2529px in a 1568px window), pinning the text to the left edge and pushing
+   * the padding off-screen entirely. */
+  min-width: 0;
+  width: 100%;
+  /* Centred column with a readable measure rather than full-bleed text. */
+  max-width: 54rem;
+  margin: 0 auto;
+  padding: 2.5rem clamp(1.25rem, 4vw, 3rem) 40vh;
   overflow-y: auto;
+  overflow-x: hidden;
   scroll-behavior: smooth;
   font-size: 1.6rem;
   font-weight: 700;
   line-height: 1.35;
-  text-align: left;
+  text-align: center;
 }
 
 .bl-line {
   cursor: pointer;
-  transform-origin: left center;
+  width: 100%;
+  /* Long words (URLs, run-on CJK) must wrap rather than widen the column. */
+  overflow-wrap: break-word;
+  transform-origin: center;
   transition:
     opacity 320ms ease,
     filter 320ms ease,
@@ -105,7 +120,6 @@
  * them with a distinct agent role. */
 .bl-line.bl-bg {
   font-size: 0.78em;
-  padding-left: 1.4em;
   opacity: calc(0.72 - min(var(--bl-d, 4) * 0.14, 0.5));
 }
 
