@@ -12,13 +12,15 @@
   background: rgba(12, 12, 14, 0.96);
   backdrop-filter: blur(22px);
   color: #fff;
+  /* Belt and braces: nothing inside the panel may scroll the page sideways. */
+  overflow-x: hidden;
 }
 
 .bl-panel-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1.5rem 0.25rem;
+  padding: 1rem clamp(1.25rem, 4vw, 3rem) 0.25rem;
   flex: 0 0 auto;
 }
 
@@ -58,6 +60,13 @@
 .bl-panel .bl-root {
   flex: 1 1 auto;
   min-height: 0;
+}
+
+.bl-panel .bl-toolbar {
+  width: 100%;
+  max-width: 54rem;
+  margin: 0 auto;
+  justify-content: center;
 }
 
 @media (max-width: 810px) {

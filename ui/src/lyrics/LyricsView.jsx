@@ -72,10 +72,14 @@ const LyricsView = ({ audioInstance, trackId }) => {
   }, [lyrics])
 
   // Reset per-track scroll and cached indices.
+  //
+  // Deliberately does NOT clear lineRefs/segRefs. React populates ref callbacks
+  // during render, which happens BEFORE effects run - clearing them here wiped
+  // every reference the frame loop depends on, so the wipe never advanced and
+  // no line was ever marked active. React already nulls the callback for any
+  // element it unmounts, so stale keys clean themselves up.
   useEffect(() => {
     activeRef.current = -1
-    lineRefs.current = []
-    segRefs.current = []
     if (rootRef.current) rootRef.current.scrollTop = 0
   }, [trackId, lyrics])
 
