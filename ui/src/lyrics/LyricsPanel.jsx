@@ -5,6 +5,7 @@ import LyricsDock from './LyricsDock'
 import { useLyrics } from './useLyrics'
 import { useLyricsEnrichment } from './useLyricsEnrichment'
 import { detectTargetLanguage } from './translate'
+import { getOverrideText, setOverrideText } from './lyricsOverride'
 import './lyricsPanel.css'
 
 // The lyrics panel is deliberately a sibling of <ReactJkMusicPlayer> rather
@@ -29,7 +30,26 @@ const readOffset = (trackId) => {
 const LyricsPanel = ({ open, onClose, audioInstance, trackId, title, artist, cover }) => {
   const translate = useTranslate()
 
-  const { loading, lyrics } = useLyrics(open ? trackId : null)
+  // Bumping this re-runs the lyrics lookup so a saved override takes effect
+  // immediately, without needing to reopen the panel or change track.
+  const [overrideVersion, setOverrideVersion] = useState(0)
+  const { loading, lyrics } = useLyrics(open ? trackId : null, overrideVersion)
+
+  const overrideText = trackId ? getOverrideText(trackId) : ''
+  const hasOverride = !!overrideText
+
+  const saveOverride = useCallback(
+    (text) => {
+      setOverrideText(trackId, text)
+      setOverrideVersion((v) => v + 1)
+    },
+    [trackId],
+  )
+
+  const removeOverride = useCallback(() => {
+    setOverrideText(trackId, '')
+    setOverrideVersion((v) => v + 1)
+  }, [trackId])
 
   const [showTranslation, setShowTranslation] = useState(false)
   const [showRomanization, setShowRomanization] = useState(false)
@@ -164,6 +184,10 @@ const LyricsPanel = ({ open, onClose, audioInstance, trackId, title, artist, cov
           romajiLoading={romaji.loading}
           translationLoading={translation.loading}
           searchQuery={searchQuery}
+          overrideText={overrideText}
+          hasOverride={hasOverride}
+          onSaveOverride={saveOverride}
+          onClearOverride={removeOverride}
         />
       </div>
     </div>

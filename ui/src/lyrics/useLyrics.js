@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import subsonic from '../subsonic'
 import { normalizeLyrics } from './normalizeLyrics'
+import { getOverride } from './lyricsOverride'
 
 // Lyrics for a track never change between fetches, so a process-lifetime cache
 // keyed by track id keeps skipping back and forth in a queue from re-hitting
@@ -19,7 +20,7 @@ const writeCache = (trackId, value) => {
   cache.set(trackId, value)
 }
 
-export const useLyrics = (trackId) => {
+export const useLyrics = (trackId, overrideVersion = 0) => {
   const [state, setState] = useState({
     loading: false,
     lyrics: null,
@@ -29,6 +30,15 @@ export const useLyrics = (trackId) => {
   useEffect(() => {
     if (!trackId) {
       setState({ loading: false, lyrics: null, error: null })
+      return
+    }
+
+    // A local override wins over anything the server returns. On a read-only
+    // share with an aggressively caching plugin, this is the only way to
+    // correct a wrong provider match.
+    const override = getOverride(trackId)
+    if (override) {
+      setState({ loading: false, lyrics: override, error: null })
       return
     }
 
@@ -62,7 +72,7 @@ export const useLyrics = (trackId) => {
     return () => {
       cancelled = true
     }
-  }, [trackId])
+  }, [trackId, overrideVersion])
 
   return state
 }

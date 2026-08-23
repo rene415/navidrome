@@ -39,10 +39,16 @@ const LyricsDock = ({
   romajiLoading,
   translationLoading,
   searchQuery,
+  overrideText,
+  hasOverride,
+  onSaveOverride,
+  onClearOverride,
 }) => {
   const translate = useTranslate()
   const [open, setOpen] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState('')
   const rootRef = useRef(null)
 
   // Clicking anywhere outside collapses the dock. Without this the panel stays
@@ -179,6 +185,74 @@ const LyricsDock = ({
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* --- local override: the only fix for a wrong match on a
+                   read-only share, where sidecars cannot be written --- */}
+          <div className="bl-dock__group">
+            <div className="bl-dock__label">
+              {translate('resources.song.lyrics.fix')}
+              {hasOverride && <span className="bl-dock__pill">●</span>}
+            </div>
+            {!editing ? (
+              <div className="bl-dock__row">
+                <button
+                  type="button"
+                  className="bl-dock__chip"
+                  onClick={() => {
+                    setDraft(overrideText || '')
+                    setEditing(true)
+                  }}
+                >
+                  {hasOverride
+                    ? translate('resources.song.lyrics.editOverride')
+                    : translate('resources.song.lyrics.addOverride')}
+                </button>
+                {hasOverride && (
+                  <button
+                    type="button"
+                    className="bl-dock__chip"
+                    onClick={onClearOverride}
+                  >
+                    {translate('resources.song.lyrics.removeOverride')}
+                  </button>
+                )}
+              </div>
+            ) : (
+              <>
+                <textarea
+                  className="bl-dock__textarea"
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  placeholder={translate('resources.song.lyrics.overridePlaceholder')}
+                  spellCheck={false}
+                  rows={7}
+                />
+                <p className="bl-dock__help">
+                  {translate('resources.song.lyrics.overrideHelp')}
+                </p>
+                <div className="bl-dock__row">
+                  <button
+                    type="button"
+                    className="bl-dock__chip"
+                    aria-pressed
+                    onClick={() => {
+                      onSaveOverride(draft)
+                      setEditing(false)
+                    }}
+                  >
+                    {translate('ra.action.save')}
+                  </button>
+                  <button
+                    type="button"
+                    className="bl-dock__chip"
+                    onClick={() => setEditing(false)}
+                  >
+                    {translate('ra.action.cancel')}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
 
           {/* --- fallback for the ~5% with no lyrics at any provider --- */}
