@@ -1,0 +1,181 @@
+import React, { useState } from 'react'
+import { useTranslate } from 'react-admin'
+import './lyricsDock.css'
+
+// Bottom-right pill control, modelled on the Better Lyrics dock we inspected:
+// a compact always-visible row that expands into a panel. Their dock carried a
+// source cycler, a source picker showing "1/2", and a timing offset stepper.
+//
+// We cannot offer the source picker - Subsonic's getLyricsBySongId returns only
+// the winning result, and providerMode:"sync" discards the losing providers
+// before Navidrome ever sees them. So the slot is spent on the controls we can
+// actually honour, and the layout leaves room for more.
+
+const LANGUAGES = [
+  ['en', 'English'],
+  ['es', 'Español'],
+  ['ja', '日本語'],
+  ['fr', 'Français'],
+  ['de', 'Deutsch'],
+  ['ko', '한국어'],
+  ['zh-Hans', '中文'],
+]
+
+const SPEEDS = [0.75, 0.9, 1, 1.1, 1.25, 1.5]
+
+const LyricsDock = ({
+  canRomanize,
+  canTranslate,
+  showRomanization,
+  showTranslation,
+  onToggleRomanization,
+  onToggleTranslation,
+  targetLang,
+  onTargetLang,
+  offsetMs,
+  onOffset,
+  speed,
+  onSpeed,
+  romajiLoading,
+  translationLoading,
+  searchQuery,
+}) => {
+  const translate = useTranslate()
+  const [open, setOpen] = useState(false)
+
+  const offsetLabel = `${offsetMs > 0 ? '+' : ''}${(offsetMs / 1000).toFixed(1)}s`
+
+  return (
+    <div className={`bl-dock ${open ? 'bl-dock--open' : ''}`}>
+      {open && (
+        <div className="bl-dock__panel">
+          {/* --- language / secondary tracks --- */}
+          {(canTranslate || canRomanize) && (
+            <div className="bl-dock__group">
+              <div className="bl-dock__label">
+                {translate('resources.song.lyrics.language')}
+              </div>
+              <div className="bl-dock__row">
+                {canRomanize && (
+                  <button
+                    type="button"
+                    className="bl-dock__chip"
+                    aria-pressed={showRomanization}
+                    onClick={onToggleRomanization}
+                  >
+                    {translate('resources.song.lyrics.romanization')}
+                    {romajiLoading ? ' …' : ''}
+                  </button>
+                )}
+                {canTranslate && (
+                  <button
+                    type="button"
+                    className="bl-dock__chip"
+                    aria-pressed={showTranslation}
+                    onClick={onToggleTranslation}
+                  >
+                    {translationLoading
+                      ? translate('resources.song.lyrics.translating')
+                      : translate('resources.song.lyrics.translation')}
+                  </button>
+                )}
+              </div>
+              {canTranslate && showTranslation && (
+                <select
+                  className="bl-dock__select"
+                  value={targetLang}
+                  onChange={(e) => onTargetLang(e.target.value)}
+                  aria-label={translate('resources.song.lyrics.language')}
+                >
+                  {LANGUAGES.map(([code, name]) => (
+                    <option key={code} value={code}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          )}
+
+          {/* --- timing offset: providers are often consistently early/late --- */}
+          <div className="bl-dock__group">
+            <div className="bl-dock__label">
+              {translate('resources.song.lyrics.sync')}
+              <span
+                className="bl-dock__info"
+                tabIndex={0}
+                role="note"
+                aria-label={translate('resources.song.lyrics.syncHelp')}
+                data-tip={translate('resources.song.lyrics.syncHelp')}
+              >
+                i
+              </span>
+            </div>
+            <div className="bl-dock__stepper">
+              <button type="button" onClick={() => onOffset(offsetMs - 250)} aria-label="-0.25s">
+                −
+              </button>
+              <span className="bl-dock__value">{offsetLabel}</span>
+              <button type="button" onClick={() => onOffset(offsetMs + 250)} aria-label="+0.25s">
+                +
+              </button>
+              {offsetMs !== 0 && (
+                <button type="button" className="bl-dock__reset" onClick={() => onOffset(0)}>
+                  {translate('resources.song.lyrics.reset')}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* --- playback speed --- */}
+          <div className="bl-dock__group">
+            <div className="bl-dock__label">
+              {translate('resources.song.lyrics.speed')}
+            </div>
+            <div className="bl-dock__row">
+              {SPEEDS.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  className="bl-dock__chip bl-dock__chip--tight"
+                  aria-pressed={speed === s}
+                  onClick={() => onSpeed(s)}
+                >
+                  {s}×
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* --- fallback for the ~5% with no lyrics at any provider --- */}
+          {searchQuery && (
+            <div className="bl-dock__group">
+              <a
+                className="bl-dock__link"
+                href={`https://genius.com/search?q=${encodeURIComponent(searchQuery)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {translate('resources.song.lyrics.searchGenius')}
+              </a>
+            </div>
+          )}
+        </div>
+      )}
+
+      <button
+        type="button"
+        className="bl-dock__trigger"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-label={translate('resources.song.lyrics.options')}
+      >
+        <span className="bl-dock__trigger-dot" />
+        {translate('resources.song.lyrics.options')}
+        {offsetMs !== 0 && <span className="bl-dock__badge">{offsetLabel}</span>}
+      </button>
+    </div>
+  )
+}
+
+export default LyricsDock

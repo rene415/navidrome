@@ -9,11 +9,59 @@
   z-index: 1200;
   display: flex;
   flex-direction: column;
-  background: rgba(12, 12, 14, 0.96);
-  backdrop-filter: blur(22px);
   color: #fff;
   /* Belt and braces: nothing inside the panel may scroll the page sideways. */
   overflow-x: hidden;
+  /* No solid background: the library underneath stays visible through the
+   * art + scrim layers below. The panel tints the app rather than blacking
+   * it out. */
+  background: transparent;
+}
+
+/* Blurred album art, blown up well past the viewport so the blur has no
+ * visible edge. Saturated slightly to keep the colour reading as the record's
+ * own rather than a grey wash. */
+.bl-panel__art {
+  position: absolute;
+  inset: -12%;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  filter: blur(52px) saturate(150%);
+  opacity: 0.55;
+  transform: scale(1.08);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Scrim between art and text. Warm, slightly almond-tinted rather than neutral
+ * black, and deliberately not opaque - the song list reads through it. */
+.bl-panel__scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  backdrop-filter: blur(26px) saturate(120%);
+  background: linear-gradient(
+      180deg,
+      rgba(28, 24, 20, 0.82) 0%,
+      rgba(20, 18, 16, 0.74) 45%,
+      rgba(16, 14, 13, 0.86) 100%
+    ),
+    radial-gradient(
+      120% 80% at 50% 40%,
+      rgba(214, 190, 158, 0.14) 0%,
+      rgba(0, 0, 0, 0) 70%
+    );
+}
+
+.bl-panel__content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .bl-panel-head {
@@ -75,5 +123,47 @@
   }
   .bl-panel .bl-root {
     font-size: 1.25rem;
+  }
+}
+
+/* Translating indicator. Lives in the panel, not just the dock, because the
+ * dock is usually collapsed and a multi-second wait with no feedback reads as
+ * a hang. Stale translations are cleared the moment the language changes, so
+ * this is the only thing on screen until the new ones land. */
+.bl-panel__status {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  margin: 0 auto 0.35rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  padding: 0.3em 0.9em;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(10px);
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  flex: 0 0 auto;
+}
+
+.bl-panel__spinner {
+  width: 0.8em;
+  height: 0.8em;
+  border: 2px solid rgba(255, 255, 255, 0.28);
+  border-top-color: rgba(255, 255, 255, 0.95);
+  border-radius: 50%;
+  animation: bl-spin 720ms linear infinite;
+}
+
+@keyframes bl-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bl-panel__spinner {
+    animation-duration: 2.4s;
   }
 }

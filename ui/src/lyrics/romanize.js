@@ -59,6 +59,10 @@ const loadConverter = () => {
     await instance.init(new KuromojiAnalyzer({ dictPath }))
     return instance
   })().catch((err) => {
+    // Surface it: a silent failure here is indistinguishable from "this track
+    // has no Japanese in it", which sent us hunting in the wrong place once.
+    // eslint-disable-next-line no-console
+    console.error('[lyrics] kuromoji/kuroshiro init failed', err)
     // Let a later attempt retry rather than caching a permanent failure.
     converterPromise = null
     throw err
@@ -82,8 +86,10 @@ export const romanizeLines = async (values) => {
         mode: 'spaced',
         romajiSystem: 'hepburn',
       })
-    } catch {
+    } catch (err) {
       // One bad line should not sink the whole track.
+      // eslint-disable-next-line no-console
+      console.error('[lyrics] romanize line failed', err)
       out[i] = ''
     }
   }
