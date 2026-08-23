@@ -46,6 +46,26 @@ const LyricsView = ({
   const segRefs = useRef([])
   const activeRef = useRef(-1)
 
+  // Instrumental breaks. A silent stretch between sung lines currently shows
+  // nothing at all, which reads as the lyrics having stalled. Better Lyrics
+  // renders a marker row for exactly this. Anything shorter than this is not
+  // worth interrupting the flow for.
+  const GAP_MS = 4500
+
+  const renderItems = useMemo(() => {
+    if (!lyrics) return []
+    const items = []
+    lyrics.lines.forEach((line, i) => {
+      const prev = i > 0 ? lyrics.lines[i - 1] : null
+      const from = prev ? prev.end : 0
+      if (line.start !== null && from !== null && line.start - from >= GAP_MS) {
+        items.push({ kind: 'gap', key: `gap-${i}`, start: from, end: line.start, at: i })
+      }
+      items.push({ kind: 'line', key: `line-${i}`, line, index: i })
+    })
+    return items
+  }, [lyrics])
+
   // Flat list of every timed segment with the line it belongs to, so the frame
   // loop can walk one array instead of descending the tree each tick.
   const timedSegments = useMemo(() => {
@@ -102,6 +122,7 @@ const LyricsView = ({
     activeRef.current = -2
 
     const lines = lyrics.lines
+    const gapList = renderItems.filter((it) => it.kind === 'gap')
     const baseOffset = lyrics.offsetMs || 0
 
     // Frame id and cancellation are LOCAL to this effect run, not a shared ref.
@@ -162,6 +183,35 @@ const LyricsView = ({
         el.dataset.lit = p > 0 && p < 1 ? '1' : '0'
       }
 
+      // Lines with no word timing get a whole-line sweep rather than a bare
+      // colour switch, so a line-sync-only track (about a third of the library)
+      // reads as deliberate instead of broken next to word-timed ones.
+      for (let i = 0; i < lines.length; i++) {
+        const el = segRefs.current[`whole-${i}`]
+        if (!el) continue
+        const line = lines[i]
+        let p
+        if (i !== active) {
+          p = i < active ? 1 : 0
+        } else if (line.start === null || line.end === null || line.end <= line.start) {
+          p = 1
+        } else {
+          p = Math.min(1, Math.max(0, (t - line.start) / (line.end - line.start)))
+        }
+        el.style.setProperty('--bl-p', p.toFixed(3))
+      }
+
+      // Instrumental markers count down through the silence.
+      for (const g of gapList) {
+        const el = segRefs.current[g.key]
+        if (!el) continue
+        let p = 0
+        if (t >= g.end) p = 1
+        else if (t > g.start) p = (t - g.start) / (g.end - g.start)
+        el.style.setProperty('--bl-p', p.toFixed(3))
+        el.classList.toggle('bl-gap--active', t >= g.start && t < g.end)
+      }
+
       // Sweep the secondary lines across the whole line duration. Translations
       // are generated per line and carry no word timing, so a single sweep is
       // the honest maximum precision available for them.
@@ -189,7 +239,7 @@ const LyricsView = ({
       cancelled = true
       cancelAnimationFrame(raf)
     }
-  }, [lyrics, audioInstance, timedSegments, offsetMs])
+  }, [lyrics, audioInstance, timedSegments, renderItems, offsetMs])
 
   if (loading) {
     return <div className="bl-status">{translate('resources.song.lyrics.loading')}</div>
@@ -201,7 +251,26 @@ const LyricsView = ({
 
   return (
     <div className="bl-root" ref={rootRef}>
-      {lyrics.lines.map((line, lineIndex) => {
+      {renderItems.map((item) => {
+        if (item.kind === 'gap') {
+          return (
+            <div
+              key={item.key}
+              className="bl-gap"
+              ref={(el) => {
+                segRefs.current[item.key] = el
+              }}
+              onClick={() => seekTo(item.end)}
+              aria-hidden="true"
+            >
+              <span className="bl-gap__dot" />
+              <span className="bl-gap__dot" />
+              <span className="bl-gap__dot" />
+            </div>
+          )
+        }
+
+        const { line, index: lineIndex } = item
         const variants = line.variants.length
           ? line.variants
           : [{ agentId: '', role: '', segments: [{ text: line.value, timed: false }] }]
@@ -228,20 +297,33 @@ const LyricsView = ({
               style={{ '--bl-d': Math.abs(lineIndex) }}
             >
               <span>
-                {variant.segments.map((seg, segIndex) =>
-                  seg.timed ? (
-                    <span
-                      key={segIndex}
-                      className="bl-seg"
-                      ref={(el) => {
-                        segRefs.current[`${lineIndex}-${variantIndex}-${segIndex}`] = el
-                      }}
-                    >
-                      {seg.text}
-                    </span>
-                  ) : (
-                    <span key={segIndex}>{seg.text}</span>
-                  ),
+                {hasTiming ? (
+                  variant.segments.map((seg, segIndex) =>
+                    seg.timed ? (
+                      <span
+                        key={segIndex}
+                        className="bl-seg"
+                        ref={(el) => {
+                          segRefs.current[`${lineIndex}-${variantIndex}-${segIndex}`] = el
+                        }}
+                      >
+                        {seg.text}
+                      </span>
+                    ) : (
+                      <span key={segIndex}>{seg.text}</span>
+                    ),
+                  )
+                ) : (
+                  // No word timing: sweep the whole line over its duration so
+                  // it reads as deliberate rather than broken.
+                  <span
+                    className="bl-seg"
+                    ref={(el) => {
+                      if (variantIndex === 0) segRefs.current[`whole-${lineIndex}`] = el
+                    }}
+                  >
+                    {variant.segments.map((seg) => seg.text).join('')}
+                  </span>
                 )}
               </span>
 

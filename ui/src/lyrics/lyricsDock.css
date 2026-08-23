@@ -245,3 +245,31 @@
   background: rgba(255, 255, 255, 0.9);
   color: #101014;
 }
+
+/* Local override editor. */
+.bl-dock__textarea {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 8px;
+  padding: 0.5em 0.6em;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  resize: vertical;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.bl-dock__textarea:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Marks that this track is showing a local override rather than provider data. */
+.bl-dock__pill {
+  color: #6ee7a8;
+  font-size: 0.8em;
+  line-height: 1;
+}

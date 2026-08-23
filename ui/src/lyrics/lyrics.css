@@ -16,6 +16,10 @@
 .bl-root {
   --bl-sung: var(--bl-sung-color, #fff);
   --bl-unsung: var(--bl-unsung-color, rgba(255, 255, 255, 0.32));
+  /* Already-sung lines recede FURTHER than upcoming ones. Previously both used
+   * --bl-unsung, so a line you had just heard looked identical to one coming
+   * up and the eye had nothing pulling it forward. */
+  --bl-done: var(--bl-done-color, rgba(255, 255, 255, 0.16));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -59,10 +63,16 @@
   color: var(--bl-sung);
 }
 
-/* A line already sung recedes to the unsung colour, so the eye is pulled
- * forward rather than lingering on what has passed. */
+/* A line already sung recedes further than an upcoming one. */
 .bl-line.bl-past {
-  color: var(--bl-unsung);
+  color: var(--bl-done);
+}
+
+/* Its word segments fade too, otherwise a fully-swept line stays bright white
+ * because every segment is pinned at progress 1. */
+.bl-line.bl-past .bl-seg {
+  --bl-sung: var(--bl-done);
+  --bl-unsung: var(--bl-done);
 }
 
 /* Word-level wipe. The gradient hard-stops at the progress point, so the
@@ -162,5 +172,55 @@
   }
   .bl-line.bl-active {
     transform: none;
+  }
+}
+
+
+/* ---- Instrumental / interlude markers ----------------------------------
+ * A silent stretch between sung lines used to render nothing at all, which
+ * reads as the lyrics having stalled. Three dots light in sequence as the gap
+ * elapses, so the wait is legible and you can see the next line coming.
+ * Click to skip to the end of the break. */
+.bl-gap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55em;
+  width: 100%;
+  max-width: 54rem;
+  margin: 0 auto;
+  padding: 0.25em 0;
+  cursor: pointer;
+  opacity: 0.85;
+}
+
+.bl-gap__dot {
+  width: 0.42em;
+  height: 0.42em;
+  border-radius: 50%;
+  background: currentColor;
+  color: var(--bl-unsung);
+  transition: transform 200ms ease;
+}
+
+/* Each dot lights as progress crosses its third of the gap. */
+.bl-gap__dot:nth-child(1) {
+  opacity: clamp(0.22, calc(var(--bl-p, 0) * 3), 1);
+}
+.bl-gap__dot:nth-child(2) {
+  opacity: clamp(0.22, calc((var(--bl-p, 0) - 0.333) * 3), 1);
+}
+.bl-gap__dot:nth-child(3) {
+  opacity: clamp(0.22, calc((var(--bl-p, 0) - 0.666) * 3), 1);
+}
+
+.bl-gap.bl-gap--active .bl-gap__dot {
+  color: var(--bl-sung);
+  transform: scale(1.15);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bl-gap__dot {
+    transition: none;
   }
 }

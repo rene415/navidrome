@@ -68,7 +68,13 @@
         "translating": "Translating…",
         "syncHelp": "Shifts the lyrics against the music. Use + when the lyrics run ahead of the singing, and − when they lag behind. Saved per track.",
         "translatingTo": "Translating to %{lang}…",
-        "romanizing": "Loading Japanese dictionary…"
+        "romanizing": "Loading Japanese dictionary…",
+        "fix": "Fix lyrics",
+        "addOverride": "Paste correct lyrics",
+        "editOverride": "Edit",
+        "removeOverride": "Remove",
+        "overridePlaceholder": "[00:12.50]First line\n[00:15.00]Second line",
+        "overrideHelp": "Paste plain text, LRC ([mm:ss.xx]), or enhanced LRC with <mm:ss.xx> word timings for karaoke. Saved in this browser and used instead of the fetched lyrics."
       }
     },
     "album": {
