@@ -101,6 +101,16 @@ const buildSegments = (value, cues) => {
   return segments
 }
 
+// How long a line plausibly takes to sing, when no cue data says so.
+// Roughly 95ms per character, clamped to a sane range. Only ever used as an
+// upper bound against the next line's start, so it can never push a line past
+// its successor.
+const estimateSungMs = (text) => {
+  const chars = (text || '').trim().length
+  if (!chars) return 1200
+  return Math.min(8000, Math.max(900, chars * 95))
+}
+
 const kindOf = (lyric) => {
   const kind = (lyric.kind || '').trim()
   return kind === '' ? MAIN : kind
@@ -193,12 +203,24 @@ export const normalizeLyrics = (lyricsList) => {
     }
   })
 
-  // Fill missing line ends from the next line's start so the wipe of a
-  // word-timed line still has something to decay against.
+  // Fill missing line ends.
+  //
+  // Snapping a line's end to the next line's start (the obvious approach) is
+  // wrong for line-level-only lyrics: it means every line is treated as sung
+  // right up until the next one begins, so the computed silence between them is
+  // always exactly zero and a 45-second instrumental break becomes invisible.
+  // That silently affected every track without word cues - about a third of the
+  // library. Estimate the sung duration instead, bounded by the next start.
   for (let i = 0; i < lines.length; i++) {
-    if (lines[i].end === null && i + 1 < lines.length) {
-      lines[i].end = lines[i + 1].start
+    if (lines[i].end !== null) continue
+    const nextStart = i + 1 < lines.length ? lines[i + 1].start : null
+    if (lines[i].start === null) {
+      lines[i].end = nextStart
+      continue
     }
+    const estimated = lines[i].start + estimateSungMs(lines[i].value)
+    lines[i].end =
+      typeof nextStart === 'number' ? Math.min(nextStart, estimated) : estimated
   }
 
   const translationValues = alignSecondary(lines, translation)
