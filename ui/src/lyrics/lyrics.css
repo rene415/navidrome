@@ -92,13 +92,17 @@
   color: var(--bl-sung);
 }
 
+/* Secondary tracks reuse .bl-seg so they get the same gradient wipe, but at a
+ * lower contrast so they never compete with the line they translate. The sweep
+ * is line-level, not per word: translations are generated per line and carry no
+ * word timing, so a single sweep is the honest maximum precision available. */
 .bl-secondary {
   display: block;
   font-size: 0.62em;
   font-weight: 600;
   margin-top: 0.28em;
-  opacity: 0.72;
-  color: var(--bl-unsung);
+  --bl-sung: rgba(255, 255, 255, 0.82);
+  --bl-unsung: rgba(255, 255, 255, 0.26);
 }
 
 .bl-romanization {

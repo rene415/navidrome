@@ -58,7 +58,17 @@
         "notFound": "No lyrics found for this track",
         "translation": "Translation",
         "romanization": "Romanization",
-        "showLyrics": "Show lyrics"
+        "showLyrics": "Show lyrics",
+        "options": "Lyrics options",
+        "language": "Language",
+        "sync": "Sync offset",
+        "speed": "Playback speed",
+        "reset": "Reset",
+        "searchGenius": "Search on Genius",
+        "translating": "Translating…",
+        "syncHelp": "Shifts the lyrics against the music. Use + when the lyrics run ahead of the singing, and − when they lag behind. Saved per track.",
+        "translatingTo": "Translating to %{lang}…",
+        "romanizing": "Loading Japanese dictionary…"
       }
     },
     "album": {

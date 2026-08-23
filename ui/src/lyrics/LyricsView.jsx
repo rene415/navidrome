@@ -1,7 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useTranslate } from 'react-admin'
-import { useLyrics } from './useLyrics'
-import { useLyricsEnrichment } from './useLyricsEnrichment'
 import './lyrics.css'
 
 // How far ahead of the active line to keep the scroll position, as a fraction
@@ -27,27 +25,26 @@ const findActiveIndex = (lines, t) => {
   return found
 }
 
-const LyricsView = ({ audioInstance, trackId }) => {
+const LyricsView = ({
+  audioInstance,
+  trackId,
+  lyrics,
+  loading,
+  offsetMs = 0,
+  showTranslation,
+  showRomanization,
+  romajiValues = [],
+  translationValues = [],
+}) => {
   const translate = useTranslate()
-  const { loading, lyrics } = useLyrics(trackId)
-
-  const [showTranslation, setShowTranslation] = useState(false)
-  const [showRomanization, setShowRomanization] = useState(false)
-
-  const { romaji, translation, canRomanize, canTranslate } = useLyricsEnrichment(
-    lyrics,
-    {
-      romanize: showRomanization,
-      translate: showTranslation,
-      targetLang: undefined,
-    },
-  )
 
   const rootRef = useRef(null)
   const lineRefs = useRef([])
+  // Secondary (translation / romanization) lines share this map, keyed
+  // "sec-<line>-<kind>". They have no per-word timing, so they are swept as a
+  // whole line across the line's duration.
   const segRefs = useRef([])
   const activeRef = useRef(-1)
-  const frameRef = useRef(0)
 
   // Flat list of every timed segment with the line it belongs to, so the frame
   // loop can walk one array instead of descending the tree each tick.
@@ -87,25 +84,40 @@ const LyricsView = ({ audioInstance, trackId }) => {
     (ms) => {
       if (!audioInstance || ms === null) return
       try {
-        audioInstance.currentTime = Math.max(0, ms / 1000)
+        audioInstance.currentTime = Math.max(0, (ms + offsetMs) / 1000)
       } catch {
         // Seeking can throw while the element is still loading; ignore and let
         // the next user action retry.
       }
     },
-    [audioInstance],
+    [audioInstance, offsetMs],
   )
 
   useEffect(() => {
     if (!lyrics || !audioInstance || !lyrics.synced) return undefined
 
+    // Force the first frame to re-evaluate every line. Without this a sync
+    // nudge that does not happen to cross a line boundary leaves the classes
+    // stale, which reads as "the offset did nothing".
+    activeRef.current = -2
+
     const lines = lyrics.lines
-    const offset = lyrics.offsetMs || 0
+    const baseOffset = lyrics.offsetMs || 0
+
+    // Frame id and cancellation are LOCAL to this effect run, not a shared ref.
+    // offsetMs is a dependency, so nudging the sync stepper tears this effect
+    // down and rebuilds it on every click. With a single shared ref, a fast
+    // series of clicks let one run cancel another run's pending frame and the
+    // loop died outright - 344 segments rendered and nothing driving them.
+    let raf = 0
+    let cancelled = false
 
     const tick = () => {
-      frameRef.current = requestAnimationFrame(tick)
+      if (cancelled) return
+      raf = requestAnimationFrame(tick)
 
-      const t = (audioInstance.currentTime || 0) * 1000 - offset
+      // User nudge is added on top of any offset the lyric itself declares.
+      const t = (audioInstance.currentTime || 0) * 1000 - baseOffset - offsetMs
       const active = findActiveIndex(lines, t)
 
       if (active !== activeRef.current) {
@@ -149,11 +161,35 @@ const LyricsView = ({ audioInstance, trackId }) => {
         el.style.setProperty('--bl-p', p.toFixed(3))
         el.dataset.lit = p > 0 && p < 1 ? '1' : '0'
       }
+
+      // Sweep the secondary lines across the whole line duration. Translations
+      // are generated per line and carry no word timing, so a single sweep is
+      // the honest maximum precision available for them.
+      for (let i = 0; i < lines.length; i++) {
+        const romajiEl = segRefs.current[`sec-${i}-romaji`]
+        const translationEl = segRefs.current[`sec-${i}-translation`]
+        if (!romajiEl && !translationEl) continue
+        const line = lines[i]
+        let p
+        if (i !== active) {
+          p = i < active ? 1 : 0
+        } else if (line.start === null || line.end === null || line.end <= line.start) {
+          p = 1
+        } else {
+          p = Math.min(1, Math.max(0, (t - line.start) / (line.end - line.start)))
+        }
+        const v = p.toFixed(3)
+        if (romajiEl) romajiEl.style.setProperty('--bl-p', v)
+        if (translationEl) translationEl.style.setProperty('--bl-p', v)
+      }
     }
 
-    frameRef.current = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(frameRef.current)
-  }, [lyrics, audioInstance, timedSegments])
+    raf = requestAnimationFrame(tick)
+    return () => {
+      cancelled = true
+      cancelAnimationFrame(raf)
+    }
+  }, [lyrics, audioInstance, timedSegments, offsetMs])
 
   if (loading) {
     return <div className="bl-status">{translate('resources.song.lyrics.loading')}</div>
@@ -164,99 +200,76 @@ const LyricsView = ({ audioInstance, trackId }) => {
   }
 
   return (
-    <>
-      {(lyrics.hasTranslation ||
-        lyrics.hasRomanization ||
-        canRomanize ||
-        canTranslate) && (
-        <div className="bl-toolbar">
-          {(lyrics.hasRomanization || canRomanize) && (
-            <button
-              type="button"
-              className="bl-chip"
-              aria-pressed={showRomanization}
-              onClick={() => setShowRomanization((v) => !v)}
+    <div className="bl-root" ref={rootRef}>
+      {lyrics.lines.map((line, lineIndex) => {
+        const variants = line.variants.length
+          ? line.variants
+          : [{ agentId: '', role: '', segments: [{ text: line.value, timed: false }] }]
+
+        const romajiText = line.romanization || romajiValues[lineIndex]
+        const translationText = line.translation || translationValues[lineIndex]
+
+        return variants.map((variant, variantIndex) => {
+          const hasTiming = variant.segments.some((s) => s.timed)
+          const classes = ['bl-line']
+          if (!hasTiming) classes.push('bl-lineonly')
+          if (variant.role === 'bg') classes.push('bl-bg')
+
+          return (
+            <div
+              key={`${lineIndex}-${variantIndex}`}
+              className={classes.join(' ')}
+              ref={(el) => {
+                // Only the first variant carries the line's scroll/active
+                // state; extra agent variants ride along with it.
+                if (variantIndex === 0) lineRefs.current[lineIndex] = el
+              }}
+              onClick={() => seekTo(line.start)}
+              style={{ '--bl-d': Math.abs(lineIndex) }}
             >
-              {translate('resources.song.lyrics.romanization')}
-              {romaji.loading ? '...' : ''}
-            </button>
-          )}
-          {(lyrics.hasTranslation || canTranslate) && (
-            <button
-              type="button"
-              className="bl-chip"
-              aria-pressed={showTranslation}
-              onClick={() => setShowTranslation((v) => !v)}
-            >
-              {translate('resources.song.lyrics.translation')}
-              {translation.loading ? '...' : ''}
-            </button>
-          )}
-        </div>
-      )}
+              <span>
+                {variant.segments.map((seg, segIndex) =>
+                  seg.timed ? (
+                    <span
+                      key={segIndex}
+                      className="bl-seg"
+                      ref={(el) => {
+                        segRefs.current[`${lineIndex}-${variantIndex}-${segIndex}`] = el
+                      }}
+                    >
+                      {seg.text}
+                    </span>
+                  ) : (
+                    <span key={segIndex}>{seg.text}</span>
+                  ),
+                )}
+              </span>
 
-      <div className="bl-root" ref={rootRef}>
-        {lyrics.lines.map((line, lineIndex) => {
-          const variants = line.variants.length
-            ? line.variants
-            : [{ agentId: '', role: '', segments: [{ text: line.value, timed: false }] }]
-
-          return variants.map((variant, variantIndex) => {
-            const hasTiming = variant.segments.some((s) => s.timed)
-            const classes = ['bl-line']
-            if (!hasTiming) classes.push('bl-lineonly')
-            if (variant.role === 'bg') classes.push('bl-bg')
-
-            return (
-              <div
-                key={`${lineIndex}-${variantIndex}`}
-                className={classes.join(' ')}
-                ref={(el) => {
-                  // Only the first variant carries the line's scroll/active
-                  // state; extra agent variants ride along with it.
-                  if (variantIndex === 0) lineRefs.current[lineIndex] = el
-                }}
-                onClick={() => seekTo(line.start)}
-                style={{ '--bl-d': Math.abs(lineIndex) }}
-              >
-                <span>
-                  {variant.segments.map((seg, segIndex) =>
-                    seg.timed ? (
-                      <span
-                        key={segIndex}
-                        className="bl-seg"
-                        ref={(el) => {
-                          segRefs.current[`${lineIndex}-${variantIndex}-${segIndex}`] = el
-                        }}
-                      >
-                        {seg.text}
-                      </span>
-                    ) : (
-                      <span key={segIndex}>{seg.text}</span>
-                    ),
-                  )}
+              {variantIndex === 0 && showRomanization && romajiText && (
+                <span
+                  className="bl-secondary bl-romanization bl-seg"
+                  ref={(el) => {
+                    segRefs.current[`sec-${lineIndex}-romaji`] = el
+                  }}
+                >
+                  {romajiText}
                 </span>
-
-                {variantIndex === 0 &&
-                  showRomanization &&
-                  (line.romanization || romaji.values[lineIndex]) && (
-                    <span className="bl-secondary bl-romanization">
-                      {line.romanization || romaji.values[lineIndex]}
-                    </span>
-                  )}
-                {variantIndex === 0 &&
-                  showTranslation &&
-                  (line.translation || translation.values[lineIndex]) && (
-                    <span className="bl-secondary bl-translation">
-                      {line.translation || translation.values[lineIndex]}
-                    </span>
-                  )}
-              </div>
-            )
-          })
-        })}
-      </div>
-    </>
+              )}
+              {variantIndex === 0 && showTranslation && translationText && (
+                <span
+                  className="bl-secondary bl-translation bl-seg"
+                  ref={(el) => {
+                    segRefs.current[`sec-${lineIndex}-translation`] = el
+                  }}
+                >
+                  {translationText}
+                </span>
+              )}
+            </div>
+          )
+        })
+      })}
+    </div>
   )
 }
 

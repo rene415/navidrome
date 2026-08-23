@@ -485,6 +485,7 @@ const Player = () => {
         trackId={playerState.current?.trackId}
         title={playerState.current?.name}
         artist={playerState.current?.singer}
+        cover={playerState.current?.cover}
       />
       <GlobalHotKeys handlers={handlers} keyMap={keyMap} allowChanges />
     </ThemeProvider>

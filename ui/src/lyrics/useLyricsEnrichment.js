@@ -31,6 +31,15 @@ export const useLyricsEnrichment = (lyrics, { romanize, translate, targetLang })
     setTranslation(idleState)
   }, [lyrics])
 
+  // Changing the target language must discard the previous result. The fetch
+  // effect below refuses to run while `values` is populated (that guard is what
+  // stops it re-fetching forever), so without this reset a language switch kept
+  // showing the old language's text and never requested the new one.
+  useEffect(() => {
+    tokenRef.current += 1
+    setTranslation(idleState)
+  }, [targetLang])
+
   // --- romanization -------------------------------------------------------
   useEffect(() => {
     if (!lyrics || lyrics.hasRomanization) return
