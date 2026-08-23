@@ -257,15 +257,17 @@ const LyricsView = ({
             <div
               key={item.key}
               className="bl-gap"
-              ref={(el) => {
-                segRefs.current[item.key] = el
-              }}
               onClick={() => seekTo(item.end)}
               aria-hidden="true"
             >
-              <span className="bl-gap__dot" />
-              <span className="bl-gap__dot" />
-              <span className="bl-gap__dot" />
+              <span
+                className="bl-gap__note bl-seg"
+                ref={(el) => {
+                  segRefs.current[item.key] = el
+                }}
+              >
+                ♪
+              </span>
             </div>
           )
         }

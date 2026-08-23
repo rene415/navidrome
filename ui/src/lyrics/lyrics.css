@@ -175,52 +175,46 @@
   }
 }
 
-
 /* ---- Instrumental / interlude markers ----------------------------------
  * A silent stretch between sung lines used to render nothing at all, which
- * reads as the lyrics having stalled. Three dots light in sequence as the gap
- * elapses, so the wait is legible and you can see the next line coming.
- * Click to skip to the end of the break. */
+ * reads as the lyrics having stalled. A musical note now marks the break and
+ * fills left-to-right as it elapses, so the wait is legible and the next line
+ * is visibly coming. Click it to skip to the end of the break. */
 .bl-gap {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.55em;
   width: 100%;
   max-width: 54rem;
   margin: 0 auto;
   padding: 0.25em 0;
   cursor: pointer;
-  opacity: 0.85;
 }
 
-.bl-gap__dot {
-  width: 0.42em;
-  height: 0.42em;
-  border-radius: 50%;
-  background: currentColor;
-  color: var(--bl-unsung);
-  transition: transform 200ms ease;
+/* Reuses the same --bl-p gradient the sung words use, so the note fills with
+ * the break rather than just sitting there. */
+.bl-gap__note {
+  display: inline-block;
+  font-size: 1.3em;
+  line-height: 1;
 }
 
-/* Each dot lights as progress crosses its third of the gap. */
-.bl-gap__dot:nth-child(1) {
-  opacity: clamp(0.22, calc(var(--bl-p, 0) * 3), 1);
-}
-.bl-gap__dot:nth-child(2) {
-  opacity: clamp(0.22, calc((var(--bl-p, 0) - 0.333) * 3), 1);
-}
-.bl-gap__dot:nth-child(3) {
-  opacity: clamp(0.22, calc((var(--bl-p, 0) - 0.666) * 3), 1);
+.bl-gap.bl-gap--active .bl-gap__note {
+  animation: bl-note-pulse 2.2s ease-in-out infinite;
 }
 
-.bl-gap.bl-gap--active .bl-gap__dot {
-  color: var(--bl-sung);
-  transform: scale(1.15);
+@keyframes bl-note-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.14);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bl-gap__dot {
-    transition: none;
+  .bl-gap.bl-gap--active .bl-gap__note {
+    animation: none;
   }
 }
