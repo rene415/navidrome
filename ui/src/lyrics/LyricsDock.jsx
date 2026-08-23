@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useTranslate } from 'react-admin'
 import './lyricsDock.css'
 
@@ -42,11 +42,40 @@ const LyricsDock = ({
 }) => {
   const translate = useTranslate()
   const [open, setOpen] = useState(false)
+  const [showHelp, setShowHelp] = useState(false)
+  const rootRef = useRef(null)
+
+  // Clicking anywhere outside collapses the dock. Without this the panel stays
+  // open over the lyrics until you happen to hit the trigger again.
+  useEffect(() => {
+    if (!open) return undefined
+    const onPointerDown = (e) => {
+      if (rootRef.current && !rootRef.current.contains(e.target)) {
+        setOpen(false)
+        setShowHelp(false)
+      }
+    }
+    // Escape collapses the dock first, so it does not close the whole panel
+    // out from under someone who only meant to dismiss this menu.
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation()
+        setOpen(false)
+        setShowHelp(false)
+      }
+    }
+    document.addEventListener('pointerdown', onPointerDown, true)
+    window.addEventListener('keydown', onKey, true)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown, true)
+      window.removeEventListener('keydown', onKey, true)
+    }
+  }, [open])
 
   const offsetLabel = `${offsetMs > 0 ? '+' : ''}${(offsetMs / 1000).toFixed(1)}s`
 
   return (
-    <div className={`bl-dock ${open ? 'bl-dock--open' : ''}`}>
+    <div className={`bl-dock ${open ? 'bl-dock--open' : ''}`} ref={rootRef}>
       {open && (
         <div className="bl-dock__panel">
           {/* --- language / secondary tracks --- */}
@@ -101,16 +130,21 @@ const LyricsDock = ({
           <div className="bl-dock__group">
             <div className="bl-dock__label">
               {translate('resources.song.lyrics.sync')}
-              <span
+              <button
+                type="button"
                 className="bl-dock__info"
-                tabIndex={0}
-                role="note"
+                aria-expanded={showHelp}
                 aria-label={translate('resources.song.lyrics.syncHelp')}
-                data-tip={translate('resources.song.lyrics.syncHelp')}
+                onClick={() => setShowHelp((v) => !v)}
               >
                 i
-              </span>
+              </button>
             </div>
+            {showHelp && (
+              <p className="bl-dock__help">
+                {translate('resources.song.lyrics.syncHelp')}
+              </p>
+            )}
             <div className="bl-dock__stepper">
               <button type="button" onClick={() => onOffset(offsetMs - 250)} aria-label="-0.25s">
                 −

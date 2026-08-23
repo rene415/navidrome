@@ -68,6 +68,42 @@ export const detectTargetLanguage = () => {
 
 // Translates an array of line strings, preserving array positions.
 // Blank entries are skipped and returned blank.
+//
+// Lines are sent INDIVIDUALLY, not as one array, and this is deliberate.
+// LibreTranslate runs language detection once per request: pass an array with
+// source:"auto" and it detects a single language for the whole batch and
+// applies it to every element. Bilingual lyrics are common - a Japanese song
+// with English hooks is the normal case here - and batching made every English
+// line get force-translated *from* Japanese, yielding mangled output or silent
+// passthrough. Verified against the running instance: a plainly English string
+// inside a Japanese batch was reported as detected "ja".
+//
+// One request per line costs more round-trips, so they run with bounded
+// concurrency. A line already in the target language is returned untouched.
+const CONCURRENCY = 6
+
+const translateOne = async (endpoint, text, target) => {
+  const response = await fetch(`${endpoint}/translate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ q: text, source: 'auto', target, format: 'text' }),
+  })
+  if (!response.ok) throw new Error(`translate failed: ${response.status}`)
+  const data = await response.json()
+
+  const detected = Array.isArray(data.detectedLanguage)
+    ? data.detectedLanguage[0]
+    : data.detectedLanguage
+  const lang = detected && detected.language
+
+  // Already in the target language: keep the original rather than round-trip
+  // it through the model, which mangles short lines.
+  if (lang && target && lang.split('-')[0] === target.split('-')[0]) return ''
+
+  const out = Array.isArray(data.translatedText) ? data.translatedText[0] : data.translatedText
+  return typeof out === 'string' ? out : ''
+}
+
 export const translateLines = async (values, target, sourceHint) => {
   const nonEmpty = values.map((v, i) => [i, v]).filter(([, v]) => v && v.trim())
   if (nonEmpty.length === 0) return new Array(values.length).fill('')
@@ -77,33 +113,26 @@ export const translateLines = async (values, target, sourceHint) => {
   if (cached && cached.length === values.length) return cached
 
   const endpoint = getEndpoint().replace(/\/+$/, '')
-  const payload = {
-    q: nonEmpty.map(([, v]) => v),
-    source: sourceHint || 'auto',
-    target,
-    format: 'text',
-  }
-
-  const response = await fetch(`${endpoint}/translate`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  })
-
-  if (!response.ok) {
-    throw new Error(`translate failed: ${response.status}`)
-  }
-
-  const data = await response.json()
-  // LibreTranslate mirrors the request shape: an array in, an array out.
-  const translated = Array.isArray(data.translatedText)
-    ? data.translatedText
-    : [data.translatedText]
-
   const out = new Array(values.length).fill('')
-  nonEmpty.forEach(([originalIndex], i) => {
-    out[originalIndex] = translated[i] || ''
-  })
+
+  let cursor = 0
+  const worker = async () => {
+    for (;;) {
+      const next = cursor++
+      if (next >= nonEmpty.length) return
+      const [index, text] = nonEmpty[next]
+      try {
+        out[index] = await translateOne(endpoint, text, target)
+      } catch {
+        // One failed line must not sink the whole track.
+        out[index] = ''
+      }
+    }
+  }
+
+  await Promise.all(
+    Array.from({ length: Math.min(CONCURRENCY, nonEmpty.length) }, worker),
+  )
 
   writeCache(trackKey, target, out)
   return out
