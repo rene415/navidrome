@@ -51,11 +51,18 @@ const loadConverter = () => {
     const instance = new Kuroshiro()
     // The dictionary is served as a static asset out of ui/public, so it must
     // go through baseUrl to survive a subpath deployment.
-    // Resolve against document.baseURI, not a root-relative path. The UI is
-    // served under /app/, so baseUrl('/kuromoji/dict') produced
-    // /kuromoji/dict/... which 404s - the dictionary actually lives at
-    // /app/kuromoji/dict/.
-    const dictPath = new URL('kuromoji/dict', document.baseURI).href
+    // Must be a ROOT-RELATIVE path, not an absolute URL.
+    //
+    // kuromoji's DictionaryLoader builds each file URL with Node's
+    // path.join(dicPath, filename). Given an absolute URL that collapses the
+    // double slash - path.join('http://host/app/kuromoji/dict', 'base.dat.gz')
+    // yields 'http:/host/app/...' with a single slash - which is not a valid
+    // URL, so every dictionary XHR failed and romanization silently produced
+    // nothing.
+    //
+    // .pathname gives '/app/kuromoji/dict', which survives path.join intact and
+    // still points at the right place (the UI is served under /app/).
+    const dictPath = new URL('kuromoji/dict', document.baseURI).pathname
     await instance.init(new KuromojiAnalyzer({ dictPath }))
     return instance
   })().catch((err) => {
