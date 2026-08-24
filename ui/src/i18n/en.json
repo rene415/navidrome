@@ -746,5 +746,23 @@
       "vol_down": "Volume Down",
       "toggle_love": "Add this track to favourites"
     }
+  },
+  "themeStore": {
+    "browse": "Browse themes…",
+    "title": "Theme store",
+    "intro": "Install themes from a registry. Themes are stored in this browser only, and are not shared with other devices.",
+    "registryUrl": "Registry URL",
+    "load": "Load",
+    "install": "Install",
+    "remove": "Remove",
+    "loading": "Loading registry…",
+    "found": "%{count} themes available",
+    "empty": "This registry lists no themes.",
+    "noRegistry": "No registry configured. Enter a registry URL above to browse themes.",
+    "loadFailed": "Could not load the registry: %{error}",
+    "installed": "Installed %{name}.",
+    "installFailed": "Could not install: %{error}",
+    "removed": "Removed %{name}.",
+    "notInRegistry": "Installed — not in the current registry"
   }
 }
