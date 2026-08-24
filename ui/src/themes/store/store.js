@@ -152,6 +152,17 @@ export const setRegistryUrl = (url) => {
   }
 }
 
+// Resolves a possibly-relative theme URL against the registry index location.
+// Absolute URLs pass through untouched.
+const resolveAgainst = (indexUrl, themeUrl) => {
+  try {
+    const base = new URL(indexUrl, window.location.href)
+    return new URL(themeUrl, base).href
+  } catch {
+    return themeUrl
+  }
+}
+
 export const fetchRegistryIndex = async (url = getRegistryUrl()) => {
   if (!url) throw new Error('no theme registry configured')
   const response = await fetch(url, { credentials: 'omit' })
@@ -168,7 +179,11 @@ export const fetchRegistryIndex = async (url = getRegistryUrl()) => {
       author: typeof t.author === 'string' ? t.author : '',
       description: typeof t.description === 'string' ? t.description : '',
       preview: t.preview && typeof t.preview === 'object' ? t.preview : null,
-      url: t.url,
+      // Resolve against the INDEX url, not the page. A registry naturally uses
+      // relative paths ("./forest.json") alongside its index; resolving those
+      // against the current page sent the fetch to /app/forest.json instead of
+      // /app/testreg/forest.json and every install failed.
+      url: resolveAgainst(url, t.url),
     }))
 }
 

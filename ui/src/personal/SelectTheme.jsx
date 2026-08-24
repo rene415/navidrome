@@ -1,13 +1,17 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { SelectInput, useTranslate } from 'react-admin'
 import { useDispatch, useSelector } from 'react-redux'
 import { AUTO_THEME_ID } from '../consts'
 import { useThemeRegistry, isDanglingId } from '../themes/store/registry'
+import ThemeStoreDialog from '../themes/store/ThemeStoreDialog'
 import { HelpMsg } from './HelpMsg'
 import { docsUrl, openInNewTab } from '../utils'
 import { changeTheme } from '../actions'
 
 const helpKey = '_help'
+// Same sentinel pattern the help entry already uses: a dropdown value that
+// performs an action instead of selecting a theme.
+const storeKey = '_store'
 
 export const SelectTheme = (props) => {
   const translate = useTranslate()
@@ -15,6 +19,7 @@ export const SelectTheme = (props) => {
   const currentTheme = useSelector((state) => state.theme)
   // Bundled themes plus anything installed from a registry.
   const themes = useThemeRegistry()
+  const [storeOpen, setStoreOpen] = useState(false)
 
   // Uninstalling the selected theme leaves its id persisted in redux. Reset it
   // so the dropdown does not sit on a choice that no longer exists - the
@@ -38,10 +43,15 @@ export const SelectTheme = (props) => {
     }),
   )
   themeChoices.push({
+    id: storeKey,
+    name: translate('themeStore.browse'),
+  })
+  themeChoices.push({
     id: helpKey,
     name: <HelpMsg caption={'Create your own'} />,
   })
   return (
+    <>
     <SelectInput
       {...props}
       source="theme"
@@ -54,8 +64,14 @@ export const SelectTheme = (props) => {
           openInNewTab(docsUrl('/docs/developers/creating-themes/'))
           return
         }
+        if (event.target.value === storeKey) {
+          setStoreOpen(true)
+          return
+        }
         dispatch(changeTheme(event.target.value))
       }}
     />
+    <ThemeStoreDialog open={storeOpen} onClose={() => setStoreOpen(false)} />
+    </>
   )
 }
