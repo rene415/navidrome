@@ -47,6 +47,7 @@ const LyricsDock = ({
   const translate = useTranslate()
   const [open, setOpen] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
+  const [showSourcesHelp, setShowSourcesHelp] = useState(false)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState('')
   const rootRef = useRef(null)
@@ -59,6 +60,7 @@ const LyricsDock = ({
       if (rootRef.current && !rootRef.current.contains(e.target)) {
         setOpen(false)
         setShowHelp(false)
+        setShowSourcesHelp(false)
       }
     }
     // Escape collapses the dock first, so it does not close the whole panel
@@ -68,6 +70,7 @@ const LyricsDock = ({
         e.stopPropagation()
         setOpen(false)
         setShowHelp(false)
+        setShowSourcesHelp(false)
       }
     }
     document.addEventListener('pointerdown', onPointerDown, true)
@@ -267,6 +270,15 @@ const LyricsDock = ({
             <div className="bl-dock__group">
               <div className="bl-dock__label">
                 {translate('resources.song.lyrics.sources')}
+                <button
+                  type="button"
+                  className="bl-dock__info"
+                  aria-expanded={showSourcesHelp}
+                  aria-label={translate('resources.song.lyrics.sourcesHelp')}
+                  onClick={() => setShowSourcesHelp((v) => !v)}
+                >
+                  i
+                </button>
               </div>
               <div className="bl-dock__row">
                 {[
@@ -285,9 +297,11 @@ const LyricsDock = ({
                   </a>
                 ))}
               </div>
-              <p className="bl-dock__help">
-                {translate('resources.song.lyrics.sourcesHelp')}
-              </p>
+              {showSourcesHelp && (
+                <p className="bl-dock__help">
+                  {translate('resources.song.lyrics.sourcesHelp')}
+                </p>
+              )}
             </div>
           )}
         </div>
