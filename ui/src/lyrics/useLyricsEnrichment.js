@@ -17,6 +17,27 @@ import { translateLines, detectTargetLanguage } from './translate'
 
 const idleState = { values: [], loading: false, error: null, available: false }
 
+// Client-side romanization is DISABLED.
+//
+// It worked, but only by downloading the full kuromoji dictionary into the
+// browser: 16.96 MB gzipped, 95.61 MB uncompressed, decompressed and turned
+// into a trie ON THE MAIN THREAD. That starves the requestAnimationFrame loop
+// and visibly stalls the karaoke wipe while it loads - and it serves ~54 of
+// 34,950 tracks (0.15%) of this library.
+//
+// Neither provider-side option covers it either. Measured 2026-08-24:
+//   - LRCLIB's API exposes no romanization field at all (only plainLyrics,
+//     syncedLyrics, lyricsfile and metadata).
+//   - nd-lyrics' includeRomanization/includeTranslations returned 0 of 6 on
+//     CJK tracks across lrclib/netease/qqmusic/kugou. Those flags sit beside
+//     mediaUserToken and storefront in the manifest - they are Apple Music only.
+//
+// The code is left intact rather than deleted: the plan is to precompute
+// romaji server-side (kuromoji works perfectly in Node) and serve it as a
+// `pronunciation` track, which the renderer already understands. Flip this to
+// true only if the dictionary ever moves off the main thread.
+const ROMANIZATION_ENABLED = false
+
 export const useLyricsEnrichment = (lyrics, { romanize, translate, targetLang }) => {
   const [romaji, setRomaji] = useState(idleState)
   const [translation, setTranslation] = useState(idleState)
@@ -42,6 +63,7 @@ export const useLyricsEnrichment = (lyrics, { romanize, translate, targetLang })
 
   // --- romanization -------------------------------------------------------
   useEffect(() => {
+    if (!ROMANIZATION_ENABLED) return
     if (!lyrics || lyrics.hasRomanization) return
     if (!shouldRomanize(lyrics.lines)) return
     if (!romanize || romaji.loading || romaji.values.length) return
@@ -91,7 +113,10 @@ export const useLyricsEnrichment = (lyrics, { romanize, translate, targetLang })
     romaji,
     translation,
     // Whether the chips should be offered at all for this track.
-    canRomanize: !!lyrics && !lyrics.hasRomanization && shouldRomanize(lyrics?.lines),
+    // A server-supplied pronunciation track still renders; only the local
+    // kuromoji path is switched off.
+    canRomanize:
+      ROMANIZATION_ENABLED && !!lyrics && !lyrics.hasRomanization && shouldRomanize(lyrics?.lines),
     canTranslate: !!lyrics && !lyrics.hasTranslation && lyrics.lines.length > 0,
   }
 }
