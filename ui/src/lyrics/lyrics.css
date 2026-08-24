@@ -109,19 +109,16 @@
   text-shadow:
     0 0 calc(var(--bl-g, 0) * 20px) rgba(255, 255, 255, calc(var(--bl-g, 0) * 0.5)),
     0 0 calc(var(--bl-g, 0) * 6px) rgba(255, 255, 255, calc(var(--bl-g, 0) * 0.35));
-  /* Grows very slightly as it sounds, then settles - the sweep reads as
-   * travelling along the line rather than the line simply changing colour.
-   * inline-block is required for transform to apply to an inline span. */
-  display: inline-block;
-  transform: scale(calc(1 + var(--bl-g, 0) * 0.055))
-    translateY(calc(var(--bl-g, 0) * -0.03em));
-  transform-origin: center bottom;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .bl-active .bl-seg {
-    transform: none;
-  }
+  /* NO transform and NO display change here.
+   *
+   * A scale() needs display:inline-block to apply to an inline span, and that
+   * display change alters baseline alignment and how the whitespace spans
+   * between words are laid out - the words visibly re-spaced as the sweep
+   * passed. The transform itself does not reflow; the display switch does.
+   *
+   * The brightness ramp above is what actually solved the sounding syllable
+   * being lost among the already-sung words, so the size effect is dropped
+   * rather than reintroducing layout shift for it. */
 }
 
 /* Lines with no word timing fall back to whole-line highlighting. */
