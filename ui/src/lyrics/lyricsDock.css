@@ -273,3 +273,10 @@
   font-size: 0.8em;
   line-height: 1;
 }
+
+/* Source lookup links styled as chips, so they sit with the other controls. */
+.bl-dock__chip--link {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
