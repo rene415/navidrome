@@ -241,6 +241,27 @@ const Player = () => {
     [gainInfo, isDesktop, playerTheme, translate, playerState.mode],
   )
 
+  // The lyrics panel blurs the cover across the whole viewport, so it needs a
+  // far larger source than the player bar does. playerReducer builds
+  // current.cover at size 300 for the transport controls; reusing that
+  // thumbnail meant a 300px image stretched over a 2560px backdrop, which is
+  // why it looked visibly worse than the artwork everywhere else.
+  const lyricsCover = useMemo(() => {
+    const current = playerState.current || {}
+    if (!current.trackId || current.isRadio) return current.cover
+    return subsonic.getCoverArtUrl(
+      {
+        id: current.trackId,
+        updatedAt: current.song?.updatedAt,
+        album: current.song?.album,
+      },
+      1000,
+    )
+    // Depends on playerState, not playerState.current: the latter is mutable,
+    // so mutating it would not re-run this memo. Matches how `options` below
+    // declares its dependency.
+  }, [playerState])
+
   const options = useMemo(() => {
     const current = playerState.current || {}
     return {
@@ -485,7 +506,7 @@ const Player = () => {
         trackId={playerState.current?.trackId}
         title={playerState.current?.name}
         artist={playerState.current?.singer}
-        cover={playerState.current?.cover}
+        cover={lyricsCover}
       />
       <GlobalHotKeys handlers={handlers} keyMap={keyMap} allowChanges />
     </ThemeProvider>
