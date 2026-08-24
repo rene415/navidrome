@@ -24,6 +24,12 @@ const WIPE_EASE = 1.25
 // flickers badly at speed.
 const GLOW_DECAY_MS = 650
 
+// How long auto-scroll stands down after a manual scroll. Without this the
+// frame loop yanks the view back to the active line on the very next line
+// change, so scrolling away to read ahead fights the player and the view
+// judders between the two positions.
+const MANUAL_SCROLL_GRACE_MS = 6000
+
 // Eased wipe progress for a syllable: 0 before, 1 at/after the hold point.
 const wipeProgress = (t, start, end) => {
   if (t <= start) return 0
@@ -89,6 +95,8 @@ const LyricsView = ({
   // whole line across the line's duration.
   const segRefs = useRef([])
   const activeRef = useRef(-1)
+  // Timestamp until which auto-scroll defers to the reader.
+  const manualScrollUntil = useRef(0)
 
   // Instrumental breaks. A silent stretch between sung lines currently shows
   // nothing at all, which reads as the lyrics having stalled. Better Lyrics
@@ -144,6 +152,31 @@ const LyricsView = ({
     if (rootRef.current) rootRef.current.scrollTop = 0
   }, [trackId, lyrics])
 
+  useEffect(() => {
+    const root = rootRef.current
+    if (!root) return undefined
+    // Input events only: a 'scroll' listener would also catch our own
+    // programmatic scrollTo and permanently suppress auto-scroll.
+    const defer = () => {
+      manualScrollUntil.current = Date.now() + MANUAL_SCROLL_GRACE_MS
+    }
+    const onKey = (e) => {
+      if (
+        ['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End'].includes(e.key)
+      ) {
+        defer()
+      }
+    }
+    root.addEventListener('wheel', defer, { passive: true })
+    root.addEventListener('touchmove', defer, { passive: true })
+    root.addEventListener('keydown', onKey)
+    return () => {
+      root.removeEventListener('wheel', defer)
+      root.removeEventListener('touchmove', defer)
+      root.removeEventListener('keydown', onKey)
+    }
+  }, [lyrics])
+
   const seekTo = useCallback(
     (ms) => {
       if (!audioInstance || ms === null) return
@@ -197,11 +230,17 @@ const LyricsView = ({
         })
 
         const target = lineRefs.current[active]
-        if (target && rootRef.current && active !== previous) {
+        // Leave the view alone while the reader is scrolling manually.
+        const deferring = Date.now() < manualScrollUntil.current
+        if (target && rootRef.current && active !== previous && !deferring) {
           const root = rootRef.current
           const top =
             target.offsetTop - root.clientHeight * SCROLL_ANCHOR + target.clientHeight / 2
-          root.scrollTo({ top: Math.max(0, top), behavior: 'smooth' })
+          const clamped = Math.max(
+            0,
+            Math.min(top, root.scrollHeight - root.clientHeight),
+          )
+          root.scrollTo({ top: clamped, behavior: 'smooth' })
         }
       }
 
