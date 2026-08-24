@@ -97,13 +97,31 @@
 /* Glow the syllable currently sounding, and let it DECAY rather than switch
  * off. --bl-g is written per segment by the frame loop: 1 while the syllable
  * sounds, falling to 0 over ~650ms after it finishes. A binary on/off flickers
- * badly through fast passages. */
+ * badly through fast passages.
+ *
+ * Words already sung on the active line sit BELOW full white. Previously they
+ * shared the same colour as the syllable currently sounding, so the whole sung
+ * half of a line was equally bright and the one word actually being sung did
+ * not stand out. The sounding syllable rises to full white via --bl-g, and
+ * everything already past it settles back. */
 .bl-active .bl-seg {
+  --bl-sung: rgba(255, 255, 255, calc(0.74 + var(--bl-g, 0) * 0.26));
   text-shadow:
     0 0 calc(var(--bl-g, 0) * 20px) rgba(255, 255, 255, calc(var(--bl-g, 0) * 0.5)),
     0 0 calc(var(--bl-g, 0) * 6px) rgba(255, 255, 255, calc(var(--bl-g, 0) * 0.35));
-  /* A very slight lift as the syllable lands, released as the glow decays. */
-  transform: translateY(calc(var(--bl-g, 0) * -0.035em));
+  /* Grows very slightly as it sounds, then settles - the sweep reads as
+   * travelling along the line rather than the line simply changing colour.
+   * inline-block is required for transform to apply to an inline span. */
+  display: inline-block;
+  transform: scale(calc(1 + var(--bl-g, 0) * 0.055))
+    translateY(calc(var(--bl-g, 0) * -0.03em));
+  transform-origin: center bottom;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bl-active .bl-seg {
+    transform: none;
+  }
 }
 
 /* Lines with no word timing fall back to whole-line highlighting. */

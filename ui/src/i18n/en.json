@@ -74,7 +74,9 @@
         "editOverride": "Edit",
         "removeOverride": "Remove",
         "overridePlaceholder": "[00:12.50]First line\n[00:15.00]Second line",
-        "overrideHelp": "Paste plain text, LRC ([mm:ss.xx]), or enhanced LRC with <mm:ss.xx> word timings for karaoke. Saved in this browser and used instead of the fetched lyrics."
+        "overrideHelp": "Paste plain text, LRC ([mm:ss.xx]), or enhanced LRC with <mm:ss.xx> word timings for karaoke. Saved in this browser and used instead of the fetched lyrics.",
+        "sources": "Look up / edit at source",
+        "sourcesHelp": "Which provider supplied these lyrics isn't reported by the server, so these are searches rather than the exact source. LRCLIB is community-editable if a track needs correcting."
       }
     },
     "album": {

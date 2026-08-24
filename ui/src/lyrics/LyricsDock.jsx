@@ -255,17 +255,39 @@ const LyricsDock = ({
             )}
           </div>
 
-          {/* --- fallback for the ~5% with no lyrics at any provider --- */}
+          {/* --- look the track up at the sources ---
+               Deliberately phrased as "look up", not "this came from X":
+               Subsonic's getLyricsBySongId does not carry provider
+               attribution, and providerMode:"sync" discards the losing
+               providers before Navidrome ever sees them, so which one actually
+               supplied a given lyric is genuinely unknown to the client.
+               LRCLIB is listed first because it is community-editable, so a
+               wrong or untimed lyric can be corrected at the source. */}
           {searchQuery && (
             <div className="bl-dock__group">
-              <a
-                className="bl-dock__link"
-                href={`https://genius.com/search?q=${encodeURIComponent(searchQuery)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {translate('resources.song.lyrics.searchGenius')}
-              </a>
+              <div className="bl-dock__label">
+                {translate('resources.song.lyrics.sources')}
+              </div>
+              <div className="bl-dock__row">
+                {[
+                  ['LRCLIB', `https://lrclib.net/search?q=${encodeURIComponent(searchQuery)}`],
+                  ['NetEase', `https://music.163.com/#/search/m/?s=${encodeURIComponent(searchQuery)}`],
+                  ['Genius', `https://genius.com/search?q=${encodeURIComponent(searchQuery)}`],
+                ].map(([name, href]) => (
+                  <a
+                    key={name}
+                    className="bl-dock__chip bl-dock__chip--link"
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {name}
+                  </a>
+                ))}
+              </div>
+              <p className="bl-dock__help">
+                {translate('resources.song.lyrics.sourcesHelp')}
+              </p>
             </div>
           )}
         </div>
