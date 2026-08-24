@@ -1,6 +1,13 @@
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import bundledThemes from '../index'
 import { AUTO_THEME_ID } from '../../consts'
-import { listInstalled, isInstalledId, toRawId, isInstalled } from './store'
+import {
+  listInstalled,
+  isInstalledId,
+  toRawId,
+  isInstalled,
+  THEME_STORE_CHANGED,
+} from './store'
 
 // Single lookup point for "every theme this user can select", bundled or
 // installed. useCurrentTheme and SelectTheme both consult this instead of the
@@ -38,6 +45,28 @@ export const resolveThemeIdOrFallback = (id) => {
   if (!id || id === AUTO_THEME_ID) return AUTO_THEME_ID
   const all = getAllThemes()
   return all[id] ? id : FALLBACK_THEME_ID
+}
+
+// Merged bundled + installed themes, refreshed when the installed set changes.
+// Reading localStorage inside a redux selector would re-run on every store
+// update; this reads once and then only on an actual install or removal.
+export const useThemeRegistry = () => {
+  const [installed, setInstalled] = useState(() => listInstalled())
+
+  const refresh = useCallback(() => setInstalled(listInstalled()), [])
+
+  useEffect(() => {
+    window.addEventListener(THEME_STORE_CHANGED, refresh)
+    // 'storage' fires when another tab installs a theme, so open tabs stay
+    // consistent without a reload.
+    window.addEventListener('storage', refresh)
+    return () => {
+      window.removeEventListener(THEME_STORE_CHANGED, refresh)
+      window.removeEventListener('storage', refresh)
+    }
+  }, [refresh])
+
+  return useMemo(() => ({ ...bundledThemes, ...installed }), [installed])
 }
 
 export default getAllThemes

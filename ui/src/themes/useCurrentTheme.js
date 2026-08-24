@@ -1,9 +1,9 @@
 import { useSelector } from 'react-redux'
 import useMediaQuery from '@material-ui/core/useMediaQuery'
-import themes from './index'
 import { AUTO_THEME_ID } from '../consts'
 import config from '../config'
 import { useEffect, useMemo } from 'react'
+import { useThemeRegistry, isDanglingId } from './store/registry'
 
 const useCurrentTheme = () => {
   // Runs above the ThemeProvider carrying the prop below, so it needs its own noSsr or the
@@ -11,18 +11,30 @@ const useCurrentTheme = () => {
   const prefersLightMode = useMediaQuery('(prefers-color-scheme: light)', {
     noSsr: true,
   })
-  const theme = useSelector((state) => {
-    if (state.theme === AUTO_THEME_ID) {
+  // Bundled themes merged with anything installed from a registry. Selecting
+  // only the id from redux and resolving outside the selector keeps this from
+  // re-reading installed themes on every store update.
+  const themes = useThemeRegistry()
+  const themeId = useSelector((state) => state.theme)
+
+  const theme = useMemo(() => {
+    // A theme that was installed and has since been removed leaves a dangling
+    // id behind. Treat it as AUTO rather than silently landing on a specific
+    // theme the user never chose.
+    const effectiveId =
+      themeId && !isDanglingId(themeId) ? themeId : AUTO_THEME_ID
+
+    if (effectiveId === AUTO_THEME_ID) {
       return prefersLightMode ? themes.LightTheme : themes.DarkTheme
     }
     const themeName =
-      Object.keys(themes).find((t) => t === state.theme) ||
+      Object.keys(themes).find((t) => t === effectiveId) ||
       Object.keys(themes).find(
         (t) => themes[t].themeName === config.defaultTheme,
       ) ||
       'DarkTheme'
     return themes[themeName]
-  })
+  }, [themes, themeId, prefersLightMode])
 
   useEffect(() => {
     const styles = document.getElementsByTagName('style')
@@ -32,7 +44,10 @@ const useCurrentTheme = () => {
         style = styles[i]
       }
     }
-    if (theme.player.stylesheet) {
+    // Optional chaining is load-bearing: `player` is required of bundled
+    // themes by convention but optional for installed ones, and an installed
+    // theme without it would otherwise throw the moment it is selected.
+    if (theme.player?.stylesheet) {
       if (style === undefined) {
         style = document.createElement('style')
         style.id = 'nd-player-style-override'
