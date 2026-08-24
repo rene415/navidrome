@@ -7,6 +7,50 @@ import './lyrics.css'
 // upcoming lines visible, which is what makes it readable while singing along.
 const SCROLL_ANCHOR = 0.42
 
+// A syllable should finish lighting slightly BEFORE its cue ends and then hold,
+// so it lands on the beat instead of sliding continuously into the next word.
+// The wipe is compressed into the first (1 - HOLD) of the cue's duration.
+const WIPE_HOLD = 0.18
+
+// Gentle deceleration into that hold. Exponent >1 = fast start, soft settle.
+// Kept mild deliberately: at 1.8 the fill was ~82% done by the syllable's
+// midpoint, so the highlight visibly raced ahead of the voice. 1.25 stays just
+// ahead of linear - enough to feel eager rather than mechanical - while still
+// tracking the singing.
+const WIPE_EASE = 1.25
+
+// How long the glow on a just-sung syllable takes to fade out. Better Lyrics
+// glows the syllable currently sounding and lets it decay; a binary on/off
+// flickers badly at speed.
+const GLOW_DECAY_MS = 650
+
+// Eased wipe progress for a syllable: 0 before, 1 at/after the hold point.
+const wipeProgress = (t, start, end) => {
+  if (t <= start) return 0
+  if (end === null || end <= start) return 1
+  const raw = (t - start) / (end - start)
+  const advanced = raw / (1 - WIPE_HOLD)
+  if (advanced >= 1) return 1
+  return 1 - Math.pow(1 - advanced, WIPE_EASE)
+}
+
+// Glow intensity for a syllable: full while sounding, decaying afterwards.
+const glowIntensity = (t, start, end) => {
+  if (t < start) return 0
+  const finish = end === null || end <= start ? start : end
+  if (t <= finish) return 1
+  const since = t - finish
+  return since >= GLOW_DECAY_MS ? 0 : 1 - since / GLOW_DECAY_MS
+}
+
+// Style writes are the hot path: ~400 segments x 60fps. Most segments are
+// static on any given frame, so skip the write when the value has not changed.
+const setVar = (el, name, value, cacheKey) => {
+  if (el[cacheKey] === value) return
+  el.style.setProperty(name, value)
+  el[cacheKey] = value
+}
+
 // Binary search for the last line whose start is <= t.
 const findActiveIndex = (lines, t) => {
   let lo = 0
@@ -169,18 +213,16 @@ const LyricsView = ({
         if (!el) continue
 
         let p
+        let glow = 0
         if (seg.lineIndex !== active) {
           p = seg.lineIndex < active ? 1 : 0
-        } else if (t < seg.start) {
-          p = 0
-        } else if (seg.end === null || seg.end <= seg.start) {
-          p = 1
         } else {
-          p = Math.min(1, Math.max(0, (t - seg.start) / (seg.end - seg.start)))
+          p = wipeProgress(t, seg.start, seg.end)
+          glow = glowIntensity(t, seg.start, seg.end)
         }
 
-        el.style.setProperty('--bl-p', p.toFixed(3))
-        el.dataset.lit = p > 0 && p < 1 ? '1' : '0'
+        setVar(el, '--bl-p', p.toFixed(3), '__blP')
+        setVar(el, '--bl-g', glow.toFixed(3), '__blG')
       }
 
       // Lines with no word timing get a whole-line sweep rather than a bare
@@ -198,7 +240,7 @@ const LyricsView = ({
         } else {
           p = Math.min(1, Math.max(0, (t - line.start) / (line.end - line.start)))
         }
-        el.style.setProperty('--bl-p', p.toFixed(3))
+        setVar(el, '--bl-p', p.toFixed(3), '__blP')
       }
 
       // Instrumental markers count down through the silence.
@@ -208,7 +250,7 @@ const LyricsView = ({
         let p = 0
         if (t >= g.end) p = 1
         else if (t > g.start) p = (t - g.start) / (g.end - g.start)
-        el.style.setProperty('--bl-p', p.toFixed(3))
+        setVar(el, '--bl-p', p.toFixed(3), '__blP')
         el.classList.toggle('bl-gap--active', t >= g.start && t < g.end)
       }
 
@@ -229,8 +271,8 @@ const LyricsView = ({
           p = Math.min(1, Math.max(0, (t - line.start) / (line.end - line.start)))
         }
         const v = p.toFixed(3)
-        if (romajiEl) romajiEl.style.setProperty('--bl-p', v)
-        if (translationEl) translationEl.style.setProperty('--bl-p', v)
+        if (romajiEl) setVar(romajiEl, '--bl-p', v, '__blP')
+        if (translationEl) setVar(translationEl, '--bl-p', v, '__blP')
       }
     }
 
