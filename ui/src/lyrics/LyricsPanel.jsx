@@ -88,6 +88,31 @@ const LyricsPanel = ({ open, onClose, audioInstance, trackId, title, artist, cov
     [audioInstance],
   )
 
+  // Lock document scroll while the panel is open.
+  //
+  // The panel is position:fixed over the app, but the page underneath keeps its
+  // own scrollbar, so the viewport showed two side by side at the right edge.
+  // Hiding the document scrollbar also reclaims its width, which would shift
+  // the whole app sideways - so the width is measured first and added back as
+  // padding. The previous values are restored rather than cleared, so this
+  // cannot clobber anything else that set them.
+  useEffect(() => {
+    if (!open) return undefined
+    const { body } = document
+    const prevOverflow = body.style.overflow
+    const prevPadding = body.style.paddingRight
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
+    body.style.overflow = 'hidden'
+    if (scrollbarWidth > 0) {
+      const current = parseFloat(window.getComputedStyle(body).paddingRight) || 0
+      body.style.paddingRight = `${current + scrollbarWidth}px`
+    }
+    return () => {
+      body.style.overflow = prevOverflow
+      body.style.paddingRight = prevPadding
+    }
+  }, [open])
+
   // Escape closes the panel. Without this the overlay is a trap: it covers the
   // song list and the only way out is the small × in the corner.
   useEffect(() => {
