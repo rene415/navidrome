@@ -21,6 +21,19 @@ export const toRawId = (id) =>
 
 const storageKey = (rawId) => `${PREFIX}${rawId}`
 
+// Installed themes change rarely, but the theme selector and useCurrentTheme
+// both need to notice. An event keeps them from re-reading localStorage on
+// every redux update, which would otherwise happen on every playback tick.
+export const THEME_STORE_CHANGED = 'nd-theme-store-changed'
+
+const notifyChanged = () => {
+  try {
+    window.dispatchEvent(new Event(THEME_STORE_CHANGED))
+  } catch {
+    // non-browser environment (tests)
+  }
+}
+
 const safeParse = (raw) => {
   try {
     return JSON.parse(raw)
@@ -96,6 +109,7 @@ export const installTheme = (rawId, themeInput, meta = {}) => {
       'could not save the theme — browser storage is full or unavailable',
     )
   }
+  notifyChanged()
   return toInstalledId(rawId)
 }
 
@@ -105,6 +119,7 @@ export const removeTheme = (rawId) => {
   } catch {
     // nothing to do
   }
+  notifyChanged()
 }
 
 export const isInstalled = (rawId) => {

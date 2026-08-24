@@ -1,7 +1,8 @@
+import { useEffect } from 'react'
 import { SelectInput, useTranslate } from 'react-admin'
 import { useDispatch, useSelector } from 'react-redux'
 import { AUTO_THEME_ID } from '../consts'
-import themes from '../themes'
+import { useThemeRegistry, isDanglingId } from '../themes/store/registry'
 import { HelpMsg } from './HelpMsg'
 import { docsUrl, openInNewTab } from '../utils'
 import { changeTheme } from '../actions'
@@ -12,6 +13,19 @@ export const SelectTheme = (props) => {
   const translate = useTranslate()
   const dispatch = useDispatch()
   const currentTheme = useSelector((state) => state.theme)
+  // Bundled themes plus anything installed from a registry.
+  const themes = useThemeRegistry()
+
+  // Uninstalling the selected theme leaves its id persisted in redux. Reset it
+  // so the dropdown does not sit on a choice that no longer exists - the
+  // rendered theme already falls back to AUTO, and this makes the stored value
+  // agree with what is on screen.
+  useEffect(() => {
+    if (isDanglingId(currentTheme)) {
+      dispatch(changeTheme(AUTO_THEME_ID))
+    }
+  }, [currentTheme, dispatch])
+
   const themeChoices = [
     {
       id: AUTO_THEME_ID,
