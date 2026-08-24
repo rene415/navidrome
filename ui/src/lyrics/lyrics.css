@@ -89,12 +89,21 @@
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  transition: text-shadow 200ms ease;
+  /* No transition: the frame loop already interpolates --bl-g every frame, so
+   * a CSS transition on top of it only adds lag. */
+  will-change: text-shadow, transform;
 }
 
-/* Glow the syllable currently sounding, not the whole line. */
-.bl-active .bl-seg[data-lit='1'] {
-  text-shadow: 0 0 18px rgba(255, 255, 255, 0.35);
+/* Glow the syllable currently sounding, and let it DECAY rather than switch
+ * off. --bl-g is written per segment by the frame loop: 1 while the syllable
+ * sounds, falling to 0 over ~650ms after it finishes. A binary on/off flickers
+ * badly through fast passages. */
+.bl-active .bl-seg {
+  text-shadow:
+    0 0 calc(var(--bl-g, 0) * 20px) rgba(255, 255, 255, calc(var(--bl-g, 0) * 0.5)),
+    0 0 calc(var(--bl-g, 0) * 6px) rgba(255, 255, 255, calc(var(--bl-g, 0) * 0.35));
+  /* A very slight lift as the syllable lands, released as the glow decays. */
+  transform: translateY(calc(var(--bl-g, 0) * -0.035em));
 }
 
 /* Lines with no word timing fall back to whole-line highlighting. */
