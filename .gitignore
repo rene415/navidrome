@@ -49,3 +49,7 @@ zz_*_test.go
 # binary blobs). Regenerate with:
 #   cp node_modules/kuromoji/dict/*.gz ui/public/kuromoji/dict/
 ui/public/kuromoji/
+
+# Generated theme registry (see ui/scripts/build-registry.mjs).
+# Publish this to the registry host; it is an artifact, not source.
+ui/registry-out/
