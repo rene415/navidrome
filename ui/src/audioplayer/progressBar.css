@@ -163,14 +163,50 @@
   margin-left: -6px !important;
 }
 
-/* Breathing room between the line and the song title. The block is centred in
- * the 80px panel, so the extra top margin is partly reabsorbed by re-centring;
- * trimming the timestamp row's margin keeps the total inside the panel instead
- * of pushing the times against the bottom edge. */
+/* Breathing room between the line and the song title.
+ *
+ * The text block is anchored to the top of the panel rather than centred in it.
+ * While it was centred, every pixel of added top spacing was half reabsorbed by
+ * re-centring, so tuning the gap meant guessing at double the value and the
+ * result drifted whenever the block's height changed. Anchored, padding-top is
+ * the gap.
+ *
+ * Only this block is anchored - the album art is a separate flex child and
+ * stays vertically centred.
+ *
+ * padding-top is a longhand against the vendor's `padding: 0 20px` shorthand.
+ * It has to stay a longhand with !important: respelling it as a shorthand here
+ * would clobber the 20px side padding the layout depends on.
+ *
+ * The block is stretched to the panel's full height and the title is the only
+ * shrinkable item, which is what keeps this safe across themes. Themes set
+ * their own type scale - one ships a 24px title, needing 69px of an 80px panel
+ * where the default needs 63 - so a fixed top gap plus intrinsic content can
+ * exceed the panel. A first attempt at this pushed the timestamps to y=85 and
+ * .panel-content's overflow:hidden silently ate them.
+ *
+ * The spacing is therefore sized so the widest known type scale still fits
+ * without anything shrinking: 10 + 53 + 1 + 16 = 80 exactly. Shrink on the
+ * title remains as a safety net for a theme with even larger type, but it is
+ * deliberately not load-bearing - a squeeze of only 5px was already enough to
+ * cut the descenders off the artist line, so it must stay a last resort rather
+ * than part of the normal layout.
+ */
+.nd-player .panel-content .progress-bar-content {
+  align-self: stretch !important;
+  justify-content: flex-start !important;
+  padding-top: 10px !important;
+  padding-bottom: 0 !important;
+}
+
 .nd-player .panel-content .progress-bar-content .audio-title {
-  margin-top: 6px !important;
+  margin-top: 0 !important;
+  flex: 0 1 auto !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
 }
 
 .nd-player .panel-content .progress-bar-content .audio-main {
-  margin-top: 2px !important;
+  margin-top: 1px !important;
+  flex: 0 0 auto !important;
 }
