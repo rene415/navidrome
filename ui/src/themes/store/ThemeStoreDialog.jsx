@@ -10,6 +10,7 @@ import {
   Typography,
   makeStyles,
 } from '@material-ui/core'
+import bundledThemes from '../index'
 import {
   fetchRegistryIndex,
   getRegistryUrl,
@@ -40,10 +41,24 @@ const useStyles = makeStyles((theme) => ({
   name: { fontWeight: 600 },
   sub: { opacity: 0.7, fontSize: '0.82rem' },
   status: { opacity: 0.7, fontSize: '0.8rem', marginTop: '0.75rem' },
+  included: { opacity: 0.55, fontSize: '0.78rem', whiteSpace: 'nowrap' },
 }))
 
 // Order matters only for looks: darkest to lightest reads as a palette strip.
 const SWATCH_KEYS = ['bg', 'surface', 'accent', 'text']
+
+// Themes that ship with Navidrome, by display name. A registry may legitimately
+// list a theme that is already bundled - ours does, because it was seeded from
+// them - and offering to "install" one is misleading: the user already has it,
+// and installing only produces a second entry with the same name.
+//
+// Matched on themeName rather than id: bundled keys are like `DraculaTheme`
+// while a registry id is like `dracula`, so ids will not line up.
+const bundledNames = new Set(
+  Object.values(bundledThemes)
+    .map((t) => t && t.themeName)
+    .filter(Boolean),
+)
 
 const ThemeStoreDialog = ({ open, onClose }) => {
   const translate = useTranslate()
@@ -144,6 +159,7 @@ const ThemeStoreDialog = ({ open, onClose }) => {
         <div className={classes.list}>
           {entries.map((entry) => {
             const here = isInstalled(entry.id)
+            const bundled = !here && bundledNames.has(entry.name)
             return (
               <div key={entry.id} className={classes.card}>
                 <div className={classes.swatches}>
@@ -161,11 +177,17 @@ const ThemeStoreDialog = ({ open, onClose }) => {
                     {[entry.author, entry.description].filter(Boolean).join(' — ')}
                   </div>
                 </div>
-                {here ? (
+                {here && (
                   <Button size="small" onClick={() => onRemove(entry.id, entry.name)}>
                     {translate('themeStore.remove')}
                   </Button>
-                ) : (
+                )}
+                {bundled && (
+                  <Typography variant="body2" className={classes.included}>
+                    {translate('themeStore.included')}
+                  </Typography>
+                )}
+                {!here && !bundled && (
                   <Button
                     size="small"
                     color="primary"

@@ -769,6 +769,7 @@
     "installFailed": "Could not install: %{error}",
     "removed": "Removed %{name}.",
     "notInRegistry": "Installed — not in the current registry",
-    "installedLabel": "%{name} (installed)"
+    "installedLabel": "%{name} (installed)",
+    "included": "Already included"
   }
 }
