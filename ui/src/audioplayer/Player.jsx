@@ -483,6 +483,10 @@ const Player = () => {
 
   return (
     <ThemeProvider theme={createMuiTheme(theme)}>
+      {/* The player is a vendored component whose internal class names carry no
+        * compatibility promise, so themes should target this wrapper rather
+        * than .react-jinke-music-player-* directly. */}
+      <div data-nd-player="">
       <ReactJkMusicPlayer
         {...options}
         className={classes.player}
@@ -499,6 +503,7 @@ const Player = () => {
         onBeforeDestroy={onBeforeDestroy}
         getAudioInstance={setAudioInstance}
       />
+      </div>
       <LyricsPanel
         open={lyricsOpen}
         onClose={() => setLyricsOpen(false)}

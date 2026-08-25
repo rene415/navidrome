@@ -26,6 +26,12 @@ const Layout = (props) => {
 
   return (
     <HotKeys handlers={keyHandlers}>
+      {/* Stable theming hooks. react-admin and Material-UI generate class
+        * names (jss123) that change between builds, so a theme targeting them
+        * would break silently on upgrade. These data attributes are a contract
+        * we own: additive, never renamed, and safe for a theme to rely on.
+        * Documented for theme authors alongside the theme docs. */}
+      <div data-nd-shell="">
       <RALayout
         {...props}
         className={classes.root}
@@ -34,6 +40,7 @@ const Layout = (props) => {
         theme={theme}
         notification={Notification}
       />
+      </div>
     </HotKeys>
   )
 }
