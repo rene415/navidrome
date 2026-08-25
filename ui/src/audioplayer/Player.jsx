@@ -13,6 +13,7 @@ import ReactGA from 'react-ga'
 import { GlobalHotKeys } from 'react-hotkeys'
 import ReactJkMusicPlayer from 'navidrome-music-player'
 import 'navidrome-music-player/assets/index.css'
+import './volumeCollapse.css'
 import useCurrentTheme from '../themes/useCurrentTheme'
 import config from '../config'
 import useStyle from './styles'
@@ -480,6 +481,34 @@ const Player = () => {
       audioInstance.removeEventListener('seeked', handleSeeked)
     }
   }, [audioInstance])
+
+  // The volume panel opens on HOVER, handled entirely in CSS.
+  //
+  // It was originally click-driven, which was wrong: the vendored speaker icon
+  // is the player's own mute button, so a click both muted the audio and
+  // toggled the panel. Hovering leaves the icon's behaviour untouched.
+  //
+  // The only thing JS still decides is which way the panel opens. A theme can
+  // move the player to the top of the window (themes/topBar.js), where a panel
+  // opening upward would land off-screen. This measures the player's actual
+  // position rather than hard-coding it, so it works for any such theme.
+  useEffect(() => {
+    const sync = () => {
+      const player = document.querySelector('.nd-player')
+      if (!player) return
+      const rect = player.getBoundingClientRect()
+      player.classList.toggle('nd-volume-top', rect.top < window.innerHeight / 2)
+    }
+    sync()
+    window.addEventListener('resize', sync)
+    // The player mounts after this effect on first load, and moves when a theme
+    // changes, so re-check shortly after both.
+    const t = setTimeout(sync, 1200)
+    return () => {
+      window.removeEventListener('resize', sync)
+      clearTimeout(t)
+    }
+  }, [theme])
 
   return (
     <ThemeProvider theme={createMuiTheme(theme)}>

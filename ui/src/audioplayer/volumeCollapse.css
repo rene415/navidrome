@@ -1,0 +1,150 @@
+/* Collapse the volume slider until the speaker icon is clicked.
+ *
+ * The vendored player exposes no prop for this - checked its index.d.ts, which
+ * declares showDestroy/showDownload/showLyric/showMediaSession/showMiniModeCover/
+ * showMiniProcessBar/showPlay/showPlayMode/showReload/showThemeSwitch and
+ * nothing for volume - so this is CSS against its internal markup:
+ *
+ *   span.group.play-sounds        container
+ *     span.sounds-icon            speaker button
+ *     div.rc-slider.sound-operation   the bar
+ *
+ * Those class names carry no compatibility promise. A player upgrade can rename
+ * them silently, and the failure mode is the slider simply reappearing - ugly,
+ * not broken. Pin the package version and re-check this on upgrade.
+ */
+
+/* Collapsed: the bar is removed from layout, reclaiming ~115px of bar width. */
+.nd-player .group.play-sounds {
+  position: relative;
+}
+
+.nd-player .group.play-sounds .sound-operation {
+  display: none;
+}
+
+/* Expanded: a panel floating ABOVE the icon.
+ *
+ * The slider stays horizontal on purpose. rc-slider tracks horizontal pointer
+ * movement, so rotating it 90deg would look vertical while dragging sideways -
+ * visually right, functionally wrong. The panel rises vertically instead. */
+.nd-player .group.play-sounds:hover .sound-operation,
+.nd-player .group.play-sounds:focus-within .sound-operation {
+  display: block;
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  /* Side spacing comes from a transparent BORDER, not padding.
+   *
+   * Every child of the slider (rail, track, step, handle) is absolutely
+   * positioned, so its offsets resolve against the padding box - padding
+   * therefore buys no breathing room at all, and the rail sat flush against
+   * the panel edge. A border is outside the padding box, so it insets the
+   * children, while the background still fills the whole panel because
+   * background-clip defaults to border-box. */
+  /* !important because the vendor sets the slider's width with higher
+   * precedence. Without it the panel collapsed to its default 100px, and once
+   * the 18px borders were taken out the bar itself was only 64px - shorter
+   * than the control we replaced. 156px leaves a 120px bar, matching the
+   * original. */
+  width: 156px !important;
+  margin: 0;
+  padding: 14px 0;
+  box-sizing: border-box;
+  /* The transparent border IS the side spacing, so the panel's visible edge
+   * has to come from a box-shadow spread instead. Declaring `border: 1px solid`
+   * here as well would silently reset the widths below - a shorthand always
+   * clobbers the longhands before it. */
+  border: 18px solid transparent;
+  border-top-width: 0;
+  border-bottom-width: 0;
+  background: rgba(24, 24, 28, 0.97);
+  background-clip: border-box;
+  border-radius: 10px;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.14),
+    0 10px 30px rgba(0, 0, 0, 0.5);
+  z-index: 1400;
+}
+
+/* The panel is clipped without this.
+ *
+ * .panel-content sets overflow:hidden and is only as tall as the 80px bar, so
+ * anything positioned above the bar is cut away - the panel rendered with the
+ * right geometry but was never actually painted. Its ancestor
+ * .music-player-panel also sets a transform, which makes it a containing block
+ * for fixed-position descendants, so position:fixed does not escape the clip
+ * either.
+ *
+ * Lifting the clip only while the panel is open keeps the player's normal
+ * layout (including its scrolling title) untouched the rest of the time. */
+.nd-player .group.play-sounds:hover ~ *,
+.nd-player:has(.group.play-sounds:hover) .panel-content,
+.nd-player:has(.group.play-sounds:focus-within) .panel-content {
+  overflow: visible;
+}
+
+/* Little pointer joining the panel to the icon. */
+.nd-player .group.play-sounds:hover::after,
+.nd-player .group.play-sounds:focus-within::after {
+  content: '';
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 10px;
+  height: 10px;
+  background: rgba(24, 24, 28, 0.97);
+  border-right: 1px solid rgba(255, 255, 255, 0.14);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  z-index: 1401;
+}
+
+/* The icon remains the vendor's MUTE toggle - the panel opens on hover, so the
+ * icon's own behaviour is left alone. */
+
+/* The Top Bar theme moves the player to the top, so the panel must drop DOWN
+ * or it opens off-screen. */
+body:has(.nd-player) .nd-player.nd-volume-top .group.play-sounds:hover .sound-operation,
+body:has(.nd-player) .nd-player.nd-volume-top .group.play-sounds:focus-within .sound-operation {
+  bottom: auto;
+  top: calc(100% + 12px);
+}
+
+body:has(.nd-player) .nd-player.nd-volume-top .group.play-sounds:hover::after,
+body:has(.nd-player) .nd-player.nd-volume-top .group.play-sounds:focus-within::after {
+  bottom: auto;
+  top: calc(100% + 6px);
+  transform: translateX(-50%) rotate(225deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nd-player .group.play-sounds .sound-operation {
+    transition: none;
+  }
+}
+
+
+/* Fill the padding box rather than a hard-coded width, so the bar always sits
+ * inside the transparent border regardless of the vendor's own sizing. The
+ * track keeps its inline percentage width - that is the fill level - and now
+ * resolves against the inset box, so it lines up with the rail. */
+.nd-player .group.play-sounds .sound-operation .rc-slider-rail,
+.nd-player .group.play-sounds .sound-operation .rc-slider-step {
+  width: 100%;
+  left: 0;
+}
+
+/* A hover bridge, so moving the pointer from icon to panel does not cross a
+ * gap and dismiss it. */
+.nd-player .group.play-sounds:hover::before,
+.nd-player .group.play-sounds:focus-within::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 156px;
+  height: 16px;
+}
