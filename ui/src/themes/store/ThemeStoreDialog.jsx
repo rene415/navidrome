@@ -1,5 +1,6 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslate } from 'react-admin'
+import { useSelector } from 'react-redux'
 import {
   Button,
   Dialog,
@@ -11,7 +12,9 @@ import {
   makeStyles,
 } from '@material-ui/core'
 import bundledThemes from '../index'
+import { AUTO_THEME_ID } from '../../consts'
 import {
+  listInstalled,
   fetchRegistryIndex,
   getRegistryUrl,
   setRegistryUrl,
@@ -20,6 +23,8 @@ import {
   isInstalled,
   listInstalledMeta,
   toRawId,
+  exportTheme,
+  downloadTheme,
 } from './store'
 
 const useStyles = makeStyles((theme) => ({
@@ -42,6 +47,19 @@ const useStyles = makeStyles((theme) => ({
   sub: { opacity: 0.7, fontSize: '0.82rem' },
   status: { opacity: 0.7, fontSize: '0.8rem', marginTop: '0.75rem' },
   included: { opacity: 0.55, fontSize: '0.78rem', whiteSpace: 'nowrap' },
+  exportRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.6rem',
+    marginTop: '1rem',
+    paddingTop: '0.85rem',
+    borderTop: `1px solid ${theme.palette.divider}`,
+  },
+  exportHint: { opacity: 0.6, fontSize: '0.76rem' },
+  exportBox: {
+    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+    fontSize: '0.72rem',
+  },
 }))
 
 // Order matters only for looks: darkest to lightest reads as a palette strip.
@@ -69,6 +87,44 @@ const ThemeStoreDialog = ({ open, onClose }) => {
   const [installed, setInstalled] = useState([])
   const [status, setStatus] = useState('')
   const [busy, setBusy] = useState(false)
+  const [exported, setExported] = useState('')
+
+  // The theme currently applied, resolved the same way useCurrentTheme does.
+  // AUTO is not itself a theme, so it resolves to whichever of Light/Dark is
+  // actually on screen.
+  const themeId = useSelector((state) => state.theme)
+  const allThemes = useMemo(
+    () => ({ ...bundledThemes, ...listInstalled() }),
+    [],
+  )
+  const activeTheme = useMemo(() => {
+    if (!themeId || themeId === AUTO_THEME_ID) {
+      const prefersLight =
+        typeof window !== 'undefined' &&
+        window.matchMedia &&
+        window.matchMedia('(prefers-color-scheme: light)').matches
+      return prefersLight ? bundledThemes.LightTheme : bundledThemes.DarkTheme
+    }
+    return allThemes[themeId] || bundledThemes.DarkTheme
+  }, [themeId, allThemes])
+
+  const onExport = useCallback(() => {
+    try {
+      const json = exportTheme(activeTheme)
+      setExported(json)
+      const slug = (activeTheme.themeName || 'theme')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+      downloadTheme(activeTheme, slug + '.json')
+      setStatus(
+        translate('themeStore.exported', { name: activeTheme.themeName }),
+      )
+    } catch (e) {
+      // A theme that cannot be exported would also fail to install, so say why.
+      setStatus(translate('themeStore.exportFailed', { error: e.message }))
+    }
+  }, [activeTheme, translate])
 
   const refreshInstalled = useCallback(() => setInstalled(listInstalledMeta()), [])
 
@@ -213,6 +269,30 @@ const ThemeStoreDialog = ({ open, onClose }) => {
             </div>
           ))}
         </div>
+
+        <div className={classes.exportRow}>
+          <Button size="small" onClick={onExport}>
+            {translate('themeStore.exportCurrent', {
+              name: activeTheme.themeName || '',
+            })}
+          </Button>
+          <Typography variant="body2" className={classes.exportHint}>
+            {translate('themeStore.exportHint')}
+          </Typography>
+        </div>
+
+        {exported && (
+          <TextField
+            fullWidth
+            multiline
+            minRows={6}
+            maxRows={14}
+            value={exported}
+            variant="outlined"
+            InputProps={{ readOnly: true, className: classes.exportBox }}
+            onFocus={(e) => e.target.select()}
+          />
+        )}
 
         {status && (
           <Typography variant="body2" className={classes.status}>
