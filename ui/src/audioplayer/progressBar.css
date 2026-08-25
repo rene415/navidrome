@@ -139,3 +139,38 @@
   margin-right: 5px;
   opacity: 0.55;
 }
+
+/* Flush the line against the panel's top border. rc-slider parks its rail at
+ * top:5px inside the 14px band, which left a strip of dead space above the
+ * line. The band itself stays 14px - it is the hit target, and it still has to
+ * hold the handle. */
+.nd-player .panel-content .audio-main .progress-bar .rc-slider-rail,
+.nd-player .panel-content .audio-main .progress-bar .rc-slider-track,
+.nd-player .panel-content .audio-main .progress-bar .progress-load-bar {
+  top: 0 !important;
+}
+
+/* The handle hangs down from the top edge rather than centring on the line.
+ * .panel-content is overflow:hidden, so a handle centred on a flush line would
+ * have its top half cut off - a half circle reads as a rendering bug, whereas a
+ * dot sitting a couple of pixels low reads as a dot. Slightly smaller than the
+ * default 14px so the offset stays under 3px. */
+.nd-player .panel-content .audio-main .progress-bar .rc-slider-handle {
+  width: 12px !important;
+  height: 12px !important;
+  top: 0 !important;
+  margin-top: 0 !important;
+  margin-left: -6px !important;
+}
+
+/* Breathing room between the line and the song title. The block is centred in
+ * the 80px panel, so the extra top margin is partly reabsorbed by re-centring;
+ * trimming the timestamp row's margin keeps the total inside the panel instead
+ * of pushing the times against the bottom edge. */
+.nd-player .panel-content .progress-bar-content .audio-title {
+  margin-top: 6px !important;
+}
+
+.nd-player .panel-content .progress-bar-content .audio-main {
+  margin-top: 2px !important;
+}
