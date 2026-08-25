@@ -3,6 +3,7 @@ import { SelectInput, useTranslate } from 'react-admin'
 import { useDispatch, useSelector } from 'react-redux'
 import { AUTO_THEME_ID } from '../consts'
 import { useThemeRegistry, isDanglingId } from '../themes/store/registry'
+import { isInstalledId } from '../themes/store/store'
 import ThemeStoreDialog from '../themes/store/ThemeStoreDialog'
 import { HelpMsg } from './HelpMsg'
 import { docsUrl, openInNewTab } from '../utils'
@@ -39,7 +40,17 @@ export const SelectTheme = (props) => {
   ]
   themeChoices.push(
     ...Object.keys(themes).map((key) => {
-      return { id: key, name: themes[key].themeName }
+      // Mark themes installed from a registry. A store theme may carry the same
+      // themeName as a bundled one - they cannot collide internally because
+      // installed ids are namespaced, but two identical labels in the dropdown
+      // read as a duplication bug.
+      const name = themes[key].themeName
+      return {
+        id: key,
+        name: isInstalledId(key)
+          ? translate('themeStore.installedLabel', { name })
+          : name,
+      }
     }),
   )
   themeChoices.push({
