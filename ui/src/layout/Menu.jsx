@@ -107,6 +107,8 @@ const Menu = ({ dense = false }) => {
 
   return (
     <div
+      data-nd-menu=""
+      data-nd-menu-open={open ? '' : undefined}
       className={clsx(classes.root, {
         [classes.open]: open,
         [classes.closed]: !open,
