@@ -199,4 +199,49 @@ export const installFromRegistry = async (entry) => {
   })
 }
 
+// --- export ---------------------------------------------------------------
+// Serialises a theme for authoring: the output is valid registry input, so
+// export -> edit -> install round-trips. Exporting a bundled theme is the
+// practical way to start a new one.
+//
+// Runs through validateTheme deliberately. If a bundled theme cannot survive
+// the export path, that is worth discovering here rather than after someone
+// has published it.
+export const exportTheme = (theme, { pretty = true } = {}) => {
+  // useCurrentTheme injects props.MuiUseMediaQuery at runtime for rendering.
+  // It is not part of the theme's definition and must not be published.
+  const { props, ...rest } = theme || {}
+  const cleanedProps = props ? { ...props } : undefined
+  if (cleanedProps) delete cleanedProps.MuiUseMediaQuery
+
+  const candidate = { ...rest }
+  if (cleanedProps && Object.keys(cleanedProps).length > 0) {
+    candidate.props = cleanedProps
+  }
+
+  const validated = validateTheme(candidate)
+  return JSON.stringify(validated, null, pretty ? 2 : 0)
+}
+
+// Offers the JSON as a file. Falls back to returning false when the browser
+// blocks programmatic downloads, so the caller can show the text instead.
+export const downloadTheme = (theme, filename) => {
+  try {
+    const json = exportTheme(theme)
+    const blob = new Blob([json], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename || 'theme.json'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    // Revoke on the next tick; revoking immediately can cancel the download.
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+    return true
+  } catch {
+    return false
+  }
+}
+
 export { ThemeValidationError }

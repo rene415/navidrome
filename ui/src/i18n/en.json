@@ -770,6 +770,10 @@
     "removed": "Removed %{name}.",
     "notInRegistry": "Installed — not in the current registry",
     "installedLabel": "%{name} (installed)",
-    "included": "Already included"
+    "included": "Already included",
+    "exportCurrent": "Export “%{name}”",
+    "exportHint": "Downloads the active theme as JSON — a valid starting point for your own.",
+    "exported": "Exported %{name}.",
+    "exportFailed": "Could not export: %{error}"
   }
 }
