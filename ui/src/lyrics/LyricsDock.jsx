@@ -1,5 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useTranslate } from 'react-admin'
+import {
+  HIGHLIGHTS,
+  TEXT_SIZES,
+  TRANSLATION_SIZES,
+  TRANSLATION_TONES,
+  isDefault,
+  DEFAULTS,
+} from './appearance'
 import './lyricsDock.css'
 
 // Bottom-right pill control, modelled on the Better Lyrics dock we inspected:
@@ -43,6 +51,8 @@ const LyricsDock = ({
   hasOverride,
   onSaveOverride,
   onClearOverride,
+  appearance,
+  onAppearance,
 }) => {
   const translate = useTranslate()
   const [open, setOpen] = useState(false)
@@ -188,6 +198,100 @@ const LyricsDock = ({
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* --- appearance: token swaps, not rendering changes --- */}
+          <div className="bl-dock__group">
+            <div className="bl-dock__label">
+              {translate('resources.song.lyrics.appearance')}
+              {!isDefault(appearance) && (
+                <button
+                  type="button"
+                  className="bl-dock__reset"
+                  onClick={() => onAppearance(DEFAULTS)}
+                >
+                  {translate('ra.action.undo')}
+                </button>
+              )}
+            </div>
+
+            <div className="bl-dock__row">
+              {HIGHLIGHTS.map((h) => (
+                <button
+                  key={h.id}
+                  type="button"
+                  className="bl-dock__swatch"
+                  aria-pressed={appearance.highlight === h.id}
+                  aria-label={translate(
+                    `resources.song.lyrics.highlight_${h.id}`,
+                  )}
+                  title={translate(`resources.song.lyrics.highlight_${h.id}`)}
+                  style={{ '--sw': `rgb(${h.rgb})` }}
+                  onClick={() =>
+                    onAppearance({ ...appearance, highlight: h.id })
+                  }
+                />
+              ))}
+            </div>
+
+            <div className="bl-dock__subrow">
+              <span className="bl-dock__sublabel">
+                {translate('resources.song.lyrics.textSize')}
+              </span>
+              <div className="bl-dock__row">
+                {TEXT_SIZES.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    className="bl-dock__chip bl-dock__chip--tight"
+                    aria-pressed={appearance.textSize === t.id}
+                    onClick={() =>
+                      onAppearance({ ...appearance, textSize: t.id })
+                    }
+                  >
+                    {translate(`resources.song.lyrics.size_${t.id}`)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Translation controls are pointless while no translation is
+                shown, so they follow the toggle rather than sitting inert. */}
+            {showTranslation && (
+              <div className="bl-dock__subrow">
+                <span className="bl-dock__sublabel">
+                  {translate('resources.song.lyrics.translationStyle')}
+                </span>
+                <div className="bl-dock__row">
+                  {TRANSLATION_SIZES.map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      className="bl-dock__chip bl-dock__chip--tight"
+                      aria-pressed={appearance.translationSize === t.id}
+                      onClick={() =>
+                        onAppearance({ ...appearance, translationSize: t.id })
+                      }
+                    >
+                      {translate(`resources.song.lyrics.size_${t.id}`)}
+                    </button>
+                  ))}
+                  {TRANSLATION_TONES.map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      className="bl-dock__chip bl-dock__chip--tight"
+                      aria-pressed={appearance.translationTone === t.id}
+                      onClick={() =>
+                        onAppearance({ ...appearance, translationTone: t.id })
+                      }
+                    >
+                      {translate(`resources.song.lyrics.tone_${t.id}`)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* --- local override: the only fix for a wrong match on a

@@ -280,3 +280,48 @@
   display: inline-flex;
   align-items: center;
 }
+
+/* --- appearance controls ------------------------------------------------ */
+
+/* Colour presets show the colour itself rather than a name - a swatch is
+ * faster to scan and needs no translation. --sw carries the preset colour. */
+.bl-dock__swatch {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background-color: var(--sw, #fff);
+  cursor: pointer;
+  /* The ring sits OUTSIDE the circle via box-shadow rather than a wider
+   * border, so selecting a preset does not change the swatch's size and
+   * shuffle the row. */
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25);
+  transition:
+    box-shadow 120ms ease,
+    transform 120ms ease;
+}
+
+.bl-dock__swatch:hover {
+  transform: scale(1.1);
+}
+
+.bl-dock__swatch[aria-pressed='true'] {
+  box-shadow:
+    0 0 0 2px rgba(0, 0, 0, 0.75),
+    0 0 0 4px var(--sw, #fff);
+}
+
+.bl-dock__subrow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.bl-dock__sublabel {
+  font-size: 0.72rem;
+  opacity: 0.6;
+  min-width: 3.6rem;
+}

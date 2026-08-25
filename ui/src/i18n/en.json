@@ -76,7 +76,22 @@
         "overridePlaceholder": "[00:12.50]First line\n[00:15.00]Second line",
         "overrideHelp": "Paste plain text, LRC ([mm:ss.xx]), or enhanced LRC with <mm:ss.xx> word timings for karaoke. Saved permanently in this browser until you remove it — it is not shared with other devices or apps.",
         "sources": "Look up / edit at source",
-        "sourcesHelp": "Which provider supplied these lyrics isn't reported by the server, so these are searches rather than the exact source. LRCLIB is community-editable if a track needs correcting."
+        "sourcesHelp": "Which provider supplied these lyrics isn't reported by the server, so these are searches rather than the exact source. LRCLIB is community-editable if a track needs correcting.",
+        "appearance": "Appearance",
+        "textSize": "Text size",
+        "translationStyle": "Translation",
+        "highlight_white": "White",
+        "highlight_ice": "Ice",
+        "highlight_mint": "Mint",
+        "highlight_gold": "Gold",
+        "highlight_rose": "Rose",
+        "size_s": "S",
+        "size_m": "M",
+        "size_l": "L",
+        "size_xl": "XL",
+        "tone_muted": "Dim",
+        "tone_normal": "Normal",
+        "tone_bright": "Bright"
       }
     },
     "album": {
