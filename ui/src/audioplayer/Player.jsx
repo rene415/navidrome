@@ -14,6 +14,7 @@ import { GlobalHotKeys } from 'react-hotkeys'
 import ReactJkMusicPlayer from 'navidrome-music-player'
 import 'navidrome-music-player/assets/index.css'
 import './volumeCollapse.css'
+import './progressBar.css'
 import useCurrentTheme from '../themes/useCurrentTheme'
 import config from '../config'
 import useStyle from './styles'
@@ -481,6 +482,27 @@ const Player = () => {
       audioInstance.removeEventListener('seeked', handleSeeked)
     }
   }, [audioInstance])
+
+  // Publish the active theme's accent as a CSS custom property.
+  //
+  // The vendored player hardcodes its played-progress colour, so it ignored the
+  // selected theme. Exposing the accent as a variable lets plain CSS recolour
+  // the player's internals, and it tracks whatever theme is active - including
+  // themes installed from the registry, which the app has never seen before.
+  //
+  // Set on documentElement rather than the player: the player portals to
+  // document.body, so a variable set on an ancestor in the React tree would
+  // never reach it.
+  useEffect(() => {
+    const accent = theme?.palette?.primary?.main
+    const root = document.documentElement
+    if (!accent) {
+      root.style.removeProperty('--nd-accent')
+      return undefined
+    }
+    root.style.setProperty('--nd-accent', accent)
+    return () => root.style.removeProperty('--nd-accent')
+  }, [theme])
 
   // The volume panel opens on HOVER, handled entirely in CSS.
   //

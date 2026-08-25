@@ -1,0 +1,89 @@
+/* Progress bar: theme-accented, with the drag handle revealed on hover.
+ *
+ * The vendored player hardcodes the played-portion colour (measured as
+ * rgb(95,95,196)), so it ignored the selected theme entirely. It now reads
+ * --nd-accent, which Player.jsx keeps in sync with the active MUI theme's
+ * palette.primary.main - so the bar follows whatever theme is chosen, including
+ * ones installed from the theme store.
+ *
+ * As with the volume work, this styles the vendored player's internal classes
+ * (.progress-bar, .rc-slider-*), which carry no compatibility promise. The
+ * failure mode on a player upgrade is the bar reverting to its own colours.
+ */
+
+/* Fallback matters: without it an unstyled theme would leave the track
+ * transparent rather than merely off-brand. */
+.nd-player .progress-bar .rc-slider-track,
+.nd-player .progress-bar .rc-slider .rc-slider-track {
+  background-color: var(--nd-accent, #5f5fc4) !important;
+}
+
+/* The unplayed remainder, kept dim so the accent reads as progress. */
+.nd-player .progress-bar .rc-slider-rail {
+  background-color: rgba(255, 255, 255, 0.26) !important;
+}
+
+/* Buffered-ahead indicator sits between the two. */
+.nd-player .progress-bar .progress-load-bar {
+  background-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+/* --- the handle -------------------------------------------------------- */
+/* Hidden until the bar is hovered, so the resting state is a clean line.
+ * Opacity rather than display, so it can fade and stays hit-testable while
+ * dragging - display:none would drop the pointer capture mid-drag. */
+.nd-player .progress-bar .rc-slider-handle {
+  opacity: 0;
+  border-color: var(--nd-accent, #5f5fc4) !important;
+  background-color: var(--nd-accent, #5f5fc4) !important;
+  box-shadow: none !important;
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+
+.nd-player .progress-bar:hover .rc-slider-handle,
+.nd-player .progress-bar .rc-slider-handle-dragging,
+.nd-player .progress-bar .rc-slider-handle:focus,
+.nd-player .progress-bar .rc-slider-handle:focus-visible {
+  opacity: 1;
+}
+
+/* A little lift while actually dragging. */
+.nd-player .progress-bar .rc-slider-handle-dragging,
+.nd-player .progress-bar .rc-slider-handle:active {
+  transform: scale(1.15);
+}
+
+/* Thicken the bar on hover, which makes it easier to hit as well as clearer
+ * that it is interactive. */
+.nd-player .progress-bar .rc-slider-rail,
+.nd-player .progress-bar .rc-slider-track,
+.nd-player .progress-bar .progress-load-bar {
+  transition: height 120ms ease;
+}
+
+.nd-player .progress-bar:hover .rc-slider-rail,
+.nd-player .progress-bar:hover .rc-slider-track,
+.nd-player .progress-bar:hover .progress-load-bar {
+  height: 6px !important;
+}
+
+/* Volume slider picks up the accent too, so the two controls agree. */
+.nd-player .sound-operation .rc-slider-track {
+  background-color: var(--nd-accent, #5f5fc4) !important;
+}
+
+.nd-player .sound-operation .rc-slider-handle {
+  border-color: var(--nd-accent, #5f5fc4) !important;
+  background-color: var(--nd-accent, #5f5fc4) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nd-player .progress-bar .rc-slider-handle,
+  .nd-player .progress-bar .rc-slider-rail,
+  .nd-player .progress-bar .rc-slider-track,
+  .nd-player .progress-bar .progress-load-bar {
+    transition: none;
+  }
+}
