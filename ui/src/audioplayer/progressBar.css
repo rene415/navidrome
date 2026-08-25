@@ -87,3 +87,55 @@
     transition: none;
   }
 }
+
+/* --- full-bleed bar pinned to the top of the player -------------------- */
+/* YouTube-Music style: the progress line runs edge to edge along the top of
+ * the transport bar rather than sitting in a row between the two timestamps.
+ *
+ * .panel-content is already position:relative, so the bar anchors to it. An
+ * absolutely positioned child resolves against the PADDING box, so left/right 0
+ * spans the panel's full width and the 30px side padding does not inset it -
+ * which is what makes the line full-bleed without touching the padding.
+ *
+ * Height stays a ~14px band rather than collapsing to the visible line: the
+ * slider centres its handle inside that band, so the handle renders fully
+ * inside the panel. .panel-content is overflow:hidden, so a line flush against
+ * the very top edge would have its handle clipped to a half circle.
+ */
+/* !important throughout: the vendored rules for these elements are six classes
+ * deep (.react-jinke-music-player-main .music-player-panel .panel-content
+ * .progress-bar-content .audio-main .progress-bar), so a readable selector
+ * loses on specificity - the first attempt at this silently kept
+ * position:relative. Matching that depth would be worse to read and would
+ * break just as hard on a rename. */
+.nd-player .panel-content .audio-main .progress-bar {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: auto !important;
+  margin: 0 !important;
+}
+
+/* The row keeps its height so the panel does not resize when the bar leaves
+ * the flow - no reflow of the transport, and no shift for anything measuring
+ * the player's height. */
+.nd-player .panel-content .audio-main {
+  justify-content: flex-start !important;
+  gap: 5px !important;
+}
+
+/* With the bar gone from the row the timestamps collapse together, so they
+ * read as one "elapsed / total" pair instead of being flung to either end. */
+.nd-player .panel-content .audio-main .current-time,
+.nd-player .panel-content .audio-main .duration {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  opacity: 0.72;
+}
+
+.nd-player .panel-content .audio-main .duration::before {
+  content: '/';
+  margin-right: 5px;
+  opacity: 0.55;
+}
