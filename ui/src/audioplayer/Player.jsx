@@ -217,7 +217,11 @@ const Player = () => {
       clearPriorAudioLists: false,
       showDestroy: true,
       showDownload: false,
-      showLyric: true,
+      // The vendored lyrics widget only understands a flat LRC string, so it
+      // cannot show word timing, agents, or a translation track. Two buttons
+      // that look equivalent but do different things is worse than one - the
+      // enhanced view has its own control (onToggleLyrics below).
+      showLyric: false,
       showReload: false,
       toggleMode: !isDesktop,
       glassBg: false,
