@@ -23,6 +23,7 @@ import MoonbaseAlphaTheme from './moonbaseAlpha'
 import MoonbaseBravoTheme from './moonbaseBravo'
 import TokyoNightLightTheme from './tokyoNightLight'
 import TokyoNightTheme from './tokyoNight'
+import TopBarTheme from './topBar'
 
 export default {
   // Classic default themes
@@ -53,4 +54,5 @@ export default {
   SquiddiesGlassTheme,
   TokyoNightLightTheme,
   TokyoNightTheme,
+  TopBarTheme,
 }

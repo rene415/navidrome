@@ -483,13 +483,13 @@ const Player = () => {
 
   return (
     <ThemeProvider theme={createMuiTheme(theme)}>
-      {/* The player is a vendored component whose internal class names carry no
-        * compatibility promise, so themes should target this wrapper rather
-        * than .react-jinke-music-player-* directly. */}
-      <div data-nd-player="">
       <ReactJkMusicPlayer
         {...options}
-        className={classes.player}
+        // 'nd-player' is a stable theming hook. It must ride the component's
+        // own className prop rather than a wrapper element: the player renders
+        // with bounds:'body' and portals to document.body, so nothing in the
+        // React tree ever contains it.
+        className={'nd-player ' + classes.player}
         onAudioListsChange={onAudioListsChange}
         onAudioVolumeChange={onAudioVolumeChange}
         onAudioProgress={onAudioProgress}
@@ -503,7 +503,6 @@ const Player = () => {
         onBeforeDestroy={onBeforeDestroy}
         getAudioInstance={setAudioInstance}
       />
-      </div>
       <LyricsPanel
         open={lyricsOpen}
         onClose={() => setLyricsOpen(false)}
