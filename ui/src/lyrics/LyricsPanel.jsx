@@ -6,6 +6,7 @@ import { useLyrics } from './useLyrics'
 import { useLyricsEnrichment } from './useLyricsEnrichment'
 import { detectTargetLanguage } from './translate'
 import { getOverrideText, setOverrideText } from './lyricsOverride'
+import { loadAppearance, saveAppearance, appearanceVars } from './appearance'
 import './lyricsPanel.css'
 
 // The lyrics panel is deliberately a sibling of <ReactJkMusicPlayer> rather
@@ -56,6 +57,16 @@ const LyricsPanel = ({ open, onClose, audioInstance, trackId, title, artist, cov
   const [targetLang, setTargetLang] = useState(detectTargetLanguage)
   const [offsetMs, setOffsetMs] = useState(0)
   const [speed, setSpeed] = useState(1)
+
+  // Read once on mount rather than on every render: this is a synchronous
+  // localStorage hit, and the panel re-renders on every animation frame while
+  // a track plays.
+  const [appearance, setAppearance] = useState(loadAppearance)
+
+  const applyAppearance = useCallback((next) => {
+    setAppearance(next)
+    saveAppearance(next)
+  }, [])
 
   const { romaji, translation, canRomanize, canTranslate } = useLyricsEnrichment(lyrics, {
     romanize: showRomanization,
@@ -135,12 +146,15 @@ const LyricsPanel = ({ open, onClose, audioInstance, trackId, title, artist, cov
 
   if (!open || !trackId) return null
 
+  // Appearance tokens go on the panel ROOT, not on .bl-root, so the dock's own
+  // swatches and any future preview sit inside the same custom-property scope.
   return (
     <div
       className="bl-panel"
       role="dialog"
       aria-modal="false"
       aria-label={translate('resources.song.lyrics.showLyrics')}
+      style={appearanceVars(appearance)}
     >
       {/* Blurred album art. Sits behind a translucent scrim so the library
        * underneath stays readable - the panel tints the app rather than
@@ -213,6 +227,8 @@ const LyricsPanel = ({ open, onClose, audioInstance, trackId, title, artist, cov
           hasOverride={hasOverride}
           onSaveOverride={saveOverride}
           onClearOverride={removeOverride}
+          appearance={appearance}
+          onAppearance={applyAppearance}
         />
       </div>
     </div>
