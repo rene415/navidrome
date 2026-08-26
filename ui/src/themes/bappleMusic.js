@@ -167,6 +167,28 @@ textarea,
   border-radius: 8px !important;
 }
 
+/* Group headers ("Albums", "Playlists") were styled identically to leaf rows -
+   same height, same 14px label, same hover pill - so the sidebar read as one
+   undifferentiated list and the app's real hierarchy, which the client does not
+   have at all, was invisible. Headers are the ListItems that are not links. */
+.MuiDrawer-paper .MuiListItem-root:not(a) {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: rgba(255, 255, 255, 0.5) !important;
+  margin-top: 10px !important;
+  /* Sentence case deliberately. Uppercase micro-caps with tracking is the
+     Material idiom this theme already removed from the lyrics dock; using it
+     here would reintroduce the same tell two panels away. */
+}
+
+.MuiDrawer-paper .MuiListItem-root:not(a):hover {
+  background: transparent !important;
+}
+
+.MuiDrawer-paper .MuiListItem-root:not(a) .MuiListItemIcon-root {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
 /* ---------- top bar ---------- */
 /* Flat and borderless: the real client has no hard rule under its header, it
    just lets content scroll beneath a blur. */
@@ -201,15 +223,29 @@ textarea,
   color: ${ACCENT} !important;
 }
 
-/* The primary action stays filled, so the row still has one clear entry point. */
-.MuiButton-root.MuiButton-root:first-child {
-  background: ${ACCENT} !important;
+/* Matched on aria-label, NOT :first-child. Positionally, the first button on
+   the page is the "Skip to content" accessibility link, which was being painted
+   as the page's primary action - and on list pages the rule landed on "Add
+   Filter" next to "Shuffle All", giving two primaries and no hierarchy.
+
+   White fill with black text, which is what the client uses for the primary on
+   an album page - not an accent fill. It reads as more emphatic, not less,
+   because nothing else on the page is white. */
+.MuiButton-root.MuiButton-root[aria-label='Play'] {
+  background: #fff !important;
   border-color: transparent !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
-.MuiButton-root.MuiButton-root:first-child svg,
-.MuiButton-root.MuiButton-root:first-child .MuiButton-label {
-  color: #fff !important;
+.MuiButton-root.MuiButton-root[aria-label='Play'] svg,
+.MuiButton-root.MuiButton-root[aria-label='Play'] .MuiButton-label {
+  color: #000 !important;
+}
+
+/* The skip link is not a page action and must never read as one. */
+.MuiButton-root.MuiButton-root.skip-nav-button {
+  background: ${GLASS} !important;
 }
 
 /* ---------- artwork ---------- */
