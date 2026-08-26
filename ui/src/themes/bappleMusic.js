@@ -65,7 +65,12 @@ const stylesheet = `
      through the panel instead of it going flatly grey. */
   backdrop-filter: blur(16px) saturate(2.2);
   -webkit-backdrop-filter: blur(16px) saturate(2.2);
-  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.5);
+  /* !important or MUI's MuiPaper.elevation1 { boxShadow: none } wins and the
+     "floating" panel has no shadow at all - measured as none. */
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2) !important;
+  /* Without an explicit height the drawer's flex height plus the 48px app bar
+     ran it 9.7px past the viewport bottom, so its bottom corners never rendered. */
+  height: calc(100vh - 64px) !important;
   overflow: hidden;
 }
 
@@ -80,7 +85,7 @@ const stylesheet = `
 /* ---------- pill navigation ---------- */
 .MuiDrawer-paper .MuiListItem-root {
   border-radius: 8px !important;
-  margin: 1px 8px !important;
+  margin: 3px 12px !important;
   padding-top: 5px !important;
   padding-bottom: 5px !important;
   width: auto !important;
@@ -103,9 +108,17 @@ const stylesheet = `
    but MUI's 30px icon column pushed labels 46px from the row start against the
    client's 29px - that gap, not row height, is what read as loose. Rows were
    already 34px with 14px labels before this change. */
+/* Only the SELECTED row's icon takes the accent. Painting every icon pink was
+   the single biggest tell against the real client, which leaves inactive icons
+   white and accents exactly one - the restraint this file's own header comment
+   describes, and then contradicted. */
 .MuiDrawer-paper .MuiListItemIcon-root {
+  color: ${TEXT} !important;
+  min-width: 25px !important;
+}
+
+.MuiDrawer-paper a[aria-current='page'] .MuiListItemIcon-root {
   color: ${ACCENT} !important;
-  min-width: 26px !important;
 }
 
 /* Trimmed from MUI's 16px.
@@ -129,7 +142,6 @@ const stylesheet = `
 .MuiDrawer-paper a[aria-current='page'] {
   background: ${PILL} !important;
   border-radius: 8px !important;
-  font-weight: 600 !important;
 }
 
 /* ---------- top bar ---------- */
@@ -184,6 +196,17 @@ const stylesheet = `
 }
 
 /* ---------- lists ---------- */
+/* The real client's track lists carry no accent at all - titles white,
+   secondary grey, and colour only on hover. Every Album and Artist cell here
+   was rendering accent pink, which read as a pink Material app rather than as
+   the client being mimicked. */
+.MuiTableBody-root a {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+.MuiTableBody-root .MuiTableCell-root a:hover {
+  color: ${ACCENT} !important;
+}
 /* Rounded hover on whole rows, and no zebra striping - the real client keeps
    list ground perfectly flat and lets the hover do the work. */
 .MuiTableBody-root > tr:nth-child(odd) {
@@ -387,6 +410,19 @@ const stylesheet = `
    exactly the lyrics panel's geometry, so whichever is open occupies the same
    slot above the transport and the two feel like one surface swapping content
    rather than two competing panels. */
+/* The vendored player hides this panel by sliding it away with
+   translate3d(100%,0,0). Overriding transform for centring CANCELLED that hide,
+   so the closed panel stayed at opacity ~2e-16 but visible, pointer-events:auto
+   and hit-testable - an invisible 940x540 click-blocker parked over the middle
+   of every page. Artist links on lower track rows silently did nothing, and the
+   queue's own close button appeared dead. Hide it explicitly, since the
+   transform can no longer do it. */
+.audio-lists-panel:not(.show) {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 .audio-lists-panel {
   left: 50% !important;
   right: auto !important;
@@ -490,7 +526,8 @@ export default {
       textSizeSmall: { fontSize: '0.8rem' },
     },
     MuiListItemIcon: {
-      root: { color: ACCENT },
+      // White by default; the CSS above accents only the selected row.
+      root: { color: TEXT },
     },
     MuiIconButton: {
       root: { color: ACCENT },
