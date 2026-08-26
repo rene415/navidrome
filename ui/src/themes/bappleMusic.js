@@ -347,6 +347,56 @@ const stylesheet = `
   background: rgba(0, 0, 0, 0.35) !important;
 }
 
+/* ---------- queue: same floating card as the lyrics ---------- */
+/* The vendored queue docks bottom-right at radius 4px 4px 0 0. Here it takes
+   exactly the lyrics panel's geometry, so whichever is open occupies the same
+   slot above the transport and the two feel like one surface swapping content
+   rather than two competing panels. */
+.audio-lists-panel {
+  left: 50% !important;
+  right: auto !important;
+  transform: translateX(-50%) !important;
+  bottom: 112px !important;
+  top: auto !important;
+  width: min(940px, calc(100% - 32px)) !important;
+  height: min(52vh, 540px) !important;
+  border-radius: 24px !important;
+  overflow: hidden !important;
+  background: ${GLASS} !important;
+  backdrop-filter: ${GLASS_BLUR};
+  -webkit-backdrop-filter: ${GLASS_BLUR};
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.62) !important;
+}
+
+.audio-lists-panel .audio-lists-panel-header {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.audio-lists-panel .audio-item {
+  border-radius: 8px !important;
+  border-bottom: 0 none !important;
+}
+
+.audio-lists-panel .audio-item:hover {
+  background: ${PILL} !important;
+}
+
+/* ---------- one panel at a time ---------- */
+/* Both could be open simultaneously, stacked on top of each other. The queue
+   wins while it is showing, so opening it tucks the lyrics away and closing it
+   brings them straight back - the lyrics are the resting state and the queue is
+   the transient errand.
+   
+   This is CSS-only on purpose, so it stays inside the theme. True
+   last-opened-wins would need JS in the app, which would affect every theme.
+   The trade-off: with the queue open, pressing the lyrics button appears to do
+   nothing until the queue is dismissed. */
+body:has(.audio-lists-panel.show) .bl-panel {
+  display: none !important;
+}
+
 /* ---------- scrollbars ---------- */
 ::-webkit-scrollbar {
   width: 8px;
