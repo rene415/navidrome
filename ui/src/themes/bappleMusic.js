@@ -206,13 +206,28 @@ textarea,
   color: rgba(255, 255, 255, 0.4) !important;
 }
 
+/* The header's own colour was being reported at 0.7, not the 0.5 set above: the
+   label sits in a nested span that carries its own colour, so styling only the
+   row leaves the text untouched. */
+.MuiDrawer-paper .MuiListItem-root:not(a) span,
+.MuiDrawer-paper .MuiListItem-root:not(a) div {
+  color: rgba(255, 255, 255, 0.5) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+
 /* ---------- top bar ---------- */
 /* Flat and borderless: the real client has no hard rule under its header, it
    just lets content scroll beneath a blur. */
+/* The client has no top bar at all - its nav starts at y=8 with nothing above
+   it - so a 48px band across the full window is a structural tell. This app
+   genuinely needs the bar (it holds the menu toggle, refresh, activity and
+   account), so it cannot be removed; making it transparent lets content pass
+   under it and removes the band. */
 .MuiAppBar-root {
-  background: rgba(26, 26, 26, 0.72) !important;
-  backdrop-filter: blur(16px) saturate(1.8);
-  -webkit-backdrop-filter: blur(16px) saturate(1.8);
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   border-bottom: 0 none !important;
   box-shadow: none !important;
 }
@@ -308,6 +323,14 @@ textarea,
   background: transparent !important;
 }
 
+/* Song titles were rendering the same grey as every other cell, so a track list
+   had no focal column. The client puts the title at 92% white and everything
+   secondary at 64%, which is what makes its lists scan. */
+.MuiTableBody-root .MuiTableCell-root:nth-child(3),
+.MuiTableBody-root .MuiTableCell-root:nth-child(3) a {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
 .MuiTableBody-root .MuiTableRow-root:hover {
   background: ${PILL} !important;
 }
@@ -341,7 +364,7 @@ textarea,
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
   backdrop-filter: ${GLASS_BLUR};
   -webkit-backdrop-filter: ${GLASS_BLUR};
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55) !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.22) !important;
   /* NOT overflow:hidden. Clipping to the pill's curve also clipped the volume
      popover, which has to escape upward - it rendered sliced off mid-slider.
      Clipping is unnecessary anyway: the radius resolves to height/2 = 40px, so
@@ -507,7 +530,7 @@ textarea,
      as that file does for the same reason. */
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.12),
-    0 8px 28px rgba(0, 0, 0, 0.5) !important;
+    0 8px 28px rgba(0, 0, 0, 0.22) !important;
 }
 
 /* The pointer has to travel with the panel or it detaches and floats alone. */
@@ -561,7 +584,7 @@ textarea,
   backdrop-filter: ${GLASS_BLUR};
   -webkit-backdrop-filter: ${GLASS_BLUR};
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.62) !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.22) !important;
 }
 
 /* The scrim exists to keep the library readable behind a FULL-screen overlay.
@@ -603,7 +626,7 @@ textarea,
   backdrop-filter: ${GLASS_BLUR};
   -webkit-backdrop-filter: ${GLASS_BLUR};
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.62) !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.22) !important;
 }
 
 .audio-lists-panel .audio-lists-panel-header {
@@ -656,7 +679,7 @@ body:has(.audio-lists-panel.show) .bl-panel {
   -webkit-backdrop-filter: ${GLASS_BLUR};
   border-radius: 20px !important;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5) !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.22) !important;
 }
 
 .bl-dock__trigger {
