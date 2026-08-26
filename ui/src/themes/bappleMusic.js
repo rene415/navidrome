@@ -34,6 +34,11 @@ const PANEL = 'rgba(45, 45, 47, 0.72)'
 const HAIRLINE = 'rgba(255, 255, 255, 0.14)'
 const PANEL_SOLID = 'rgba(32, 32, 34, 0.97)'
 const PILL = 'rgba(255, 255, 255, 0.06)'
+// The client's "liquid glass": measured off its volume popover, which exposes
+// the recipe plainly - rgba(40,40,40,0.6) under blur(60px) saturate(2). The
+// 60px blur is the whole effect; at 16-20px it just looks like a dark panel.
+const GLASS = 'rgba(40, 40, 40, 0.6)'
+const GLASS_BLUR = 'blur(60px) saturate(2)'
 const INSET = 8
 const RADIUS = 20
 
@@ -138,6 +143,40 @@ const stylesheet = `
   box-shadow: none !important;
 }
 
+/* ---------- action buttons ---------- */
+/* Seven solid red pills butted together with margin:0 was the loudest thing on
+   the page. The client shows ONE prominent pill and keeps the rest quiet, so
+   these become glass with accent icons, and the primary action keeps the fill.
+   Spacing is the actual fix requested; the tone change is what stops seven
+   spaced-out red pills from simply being a wider wall of red. */
+.MuiButton-root.MuiButton-root {
+  background: ${GLASS} !important;
+  backdrop-filter: ${GLASS_BLUR};
+  -webkit-backdrop-filter: ${GLASS_BLUR};
+  color: ${TEXT} !important;
+  margin: 0 8px 10px 0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.MuiButton-root.MuiButton-root:hover {
+  background: rgba(60, 60, 60, 0.7) !important;
+}
+
+.MuiButton-root.MuiButton-root svg {
+  color: ${ACCENT} !important;
+}
+
+/* The primary action stays filled, so the row still has one clear entry point. */
+.MuiButton-root.MuiButton-root:first-child {
+  background: ${ACCENT} !important;
+  border-color: transparent !important;
+}
+
+.MuiButton-root.MuiButton-root:first-child svg,
+.MuiButton-root.MuiButton-root:first-child .MuiButton-label {
+  color: #fff !important;
+}
+
 /* ---------- artwork ---------- */
 .MuiCard-root {
   background: transparent !important;
@@ -165,32 +204,50 @@ const stylesheet = `
   border-bottom-right-radius: 8px;
 }
 
-/* ---------- transport ---------- */
-/* Detached from the window edge to match the floating sidebar. The layout
-   already reserves height at the bottom for the player, so insetting it needs
-   no extra padding anywhere else. */
+/* ---------- transport: floating pill ---------- */
+/* The client's bar is a detached, fully-rounded pill: measured 668x56 at
+   radius 1000px, sitting 89px off the bottom, over blur(60px) saturate(2).
+   Ours is wider than 668px because this app carries more controls than the
+   client does (lyrics, queue, favourite, download) - shrinking to match
+   exactly would crush them. max-width keeps it a pill on wide screens while
+   still collapsing gracefully on narrow ones. */
 .nd-player .music-player-panel {
-  left: ${INSET}px !important;
-  right: ${INSET}px !important;
-  bottom: ${INSET}px !important;
-  width: auto !important;
-  border-radius: 14px !important;
-  /* More opaque than the sidebar and less saturated. The sidebar floats over
-     flat ground, but the transport floats over the album grid - at the
-     sidebar's 0.72/2.2 the artwork bled through and the bar read as noise
-     rather than as a surface. */
-  background: ${PANEL_SOLID} !important;
-  border: 1px solid ${HAIRLINE} !important;
-  backdrop-filter: blur(22px) saturate(1.5);
-  -webkit-backdrop-filter: blur(22px) saturate(1.5);
-  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.5) !important;
+  left: 50% !important;
+  right: auto !important;
+  transform: translateX(-50%) !important;
+  width: min(940px, calc(100% - 32px)) !important;
+  bottom: 18px !important;
+  border-radius: 1000px !important;
+  background: ${GLASS} !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  backdrop-filter: ${GLASS_BLUR};
+  -webkit-backdrop-filter: ${GLASS_BLUR};
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55) !important;
+  /* Clips the progress line to the pill's curve; without this it runs straight
+     out through the rounded corners. */
+  overflow: hidden !important;
+}
+
+/* The progress line stays at the top, as asked, but inset so it lives within
+   the pill's straight span instead of being sliced by the corner radius - and
+   thinned to the client's 2px hairline rather than a thick accent bar. */
+.nd-player .panel-content .audio-main .progress-bar {
+  left: 120px !important;
+  right: 120px !important;
+  top: 3px !important;
+}
+
+.nd-player .panel-content .audio-main .rc-slider-rail,
+.nd-player .panel-content .audio-main .rc-slider-track,
+.nd-player .panel-content .audio-main .progress-load-bar {
+  height: 2px !important;
 }
 
 /* Without this the now-playing text inherits the palette's link colour and
-   renders dark pink (measured rgb(178, 54, 74)) - unreadable on the panel and
-   nothing like the client this mimics, where the title is white and the
-   artist recedes. songTitle/songArtist/songAlbum are real class names, unlike
-   the JSS soup around them. */
+   renders dark pink (measured rgb(178, 54, 74)) - unreadable on glass, and
+   nothing like the client, where the title is white and the artist recedes.
+   songTitle/songArtist/songAlbum are real class names, unlike the JSS around
+   them. (Deleted once by a transport rewrite - keep them out of that block.) */
 .nd-player .audio-title a,
 .nd-player .songTitle {
   color: ${TEXT} !important;
@@ -201,6 +258,12 @@ const stylesheet = `
 .nd-player .songAlbum {
   color: rgba(255, 255, 255, 0.55) !important;
   font-weight: 400 !important;
+}
+
+/* Small rounded artwork inside the pill, matching the client's thumbnail. */
+.nd-player .music-player-panel .img-content {
+  border-radius: 6px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
 }
 
 .nd-player .music-player-panel svg {
