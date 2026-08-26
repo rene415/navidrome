@@ -223,9 +223,12 @@ const stylesheet = `
   backdrop-filter: ${GLASS_BLUR};
   -webkit-backdrop-filter: ${GLASS_BLUR};
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55) !important;
-  /* Clips the progress line to the pill's curve; without this it runs straight
-     out through the rounded corners. */
-  overflow: hidden !important;
+  /* NOT overflow:hidden. Clipping to the pill's curve also clipped the volume
+     popover, which has to escape upward - it rendered sliced off mid-slider.
+     Clipping is unnecessary anyway: the radius resolves to height/2 = 40px, so
+     only the outer 40px of each end is curved, and the progress line is inset
+     120px, nowhere near it. */
+  overflow: visible !important;
 }
 
 /* The progress line stays at the top, as asked, but inset so it lives within
@@ -264,6 +267,30 @@ const stylesheet = `
 .nd-player .music-player-panel .img-content {
   border-radius: 6px !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* ---------- volume popover ---------- */
+/* The stock offset is 12px above the icon, which was tuned for a full-width bar
+   where the icon sits near the top edge. In the pill the icon is centred in an
+   80px surface, so 12px left the popover straddling the pill's top edge instead
+   of floating clear of it. Measured: icon top 27px below the pill top, so this
+   clears it with room to spare. */
+.nd-player .group.play-sounds:hover .sound-operation,
+.nd-player .group.play-sounds:focus-within .sound-operation {
+  bottom: calc(100% + 42px) !important;
+  background: ${GLASS} !important;
+  backdrop-filter: ${GLASS_BLUR};
+  -webkit-backdrop-filter: ${GLASS_BLUR};
+  border-radius: 1000px !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* The pointer has to travel with the panel or it detaches and floats alone. */
+.nd-player .group.play-sounds:hover::after,
+.nd-player .group.play-sounds:focus-within::after {
+  bottom: calc(100% + 36px) !important;
+  background: ${GLASS} !important;
 }
 
 .nd-player .music-player-panel svg {
