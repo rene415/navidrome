@@ -94,9 +94,27 @@ const stylesheet = `
 
 /* Icons carry the accent; labels stay white. Colouring the label too is the
    usual mistake and makes the sidebar shout. */
+/* min-width, not size: the icons are already 24px, matching the client exactly,
+   but MUI's 30px icon column pushed labels 46px from the row start against the
+   client's 29px - that gap, not row height, is what read as loose. Rows were
+   already 34px with 14px labels before this change. */
 .MuiDrawer-paper .MuiListItemIcon-root {
   color: ${ACCENT} !important;
-  min-width: 30px !important;
+  min-width: 26px !important;
+}
+
+/* Trimmed from MUI's 16px.
+   Sub-items do NOT carry their own indent - applying this to every row flattened
+   Albums > All/Random/Favourites into one undifferentiated list. Navidrome nests
+   grouped items inside a .MuiCollapse-root, so the indent is restored there
+   explicitly. Unlike the client this mimics, which has a flat sidebar, this app
+   has real hierarchy worth keeping. */
+.MuiDrawer-paper .MuiListItem-root {
+  padding-left: 12px !important;
+}
+
+.MuiDrawer-paper .MuiCollapse-root .MuiListItem-root {
+  padding-left: 28px !important;
 }
 
 /* The active row is matched on aria-current, NOT on a class. React-admin marks
