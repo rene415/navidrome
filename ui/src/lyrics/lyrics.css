@@ -29,6 +29,11 @@
   gap: 1.1em;
   min-width: 0;
   width: 100%;
+  /* border-box is load-bearing: with width:100% and 48px of side padding, a
+   * content-box .bl-root measures 96px WIDER than its container and shoves the
+   * centred column 44px to the right. At full-screen width that is a 2% drift
+   * nobody notices; inside a narrow floating panel it is glaring. */
+  box-sizing: border-box;
   padding: 2.5rem clamp(1.25rem, 4vw, 3rem) 45vh;
   overflow-y: auto;
   overflow-x: hidden;

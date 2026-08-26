@@ -270,6 +270,34 @@ const stylesheet = `
 }
 
 /* ---------- volume popover ---------- */
+/* The transport has to outrank the floating cards, or its popover cannot reach
+   over them. The panel sits at z-index 99 inside its own stacking context (it
+   carries a transform), while the queue is 999 and the lyrics panel 1200 - so
+   the volume slider was drawn UNDER whichever card was open and could not be
+   used at all. Raising the panel is safe: the cards stop 14px short of the
+   pill, so the two never overlap; only the popover reaches across. */
+.nd-player .music-player-panel {
+  z-index: 1300 !important;
+}
+
+/* An invisible bridge across the gap between icon and popover.
+   The popover is a descendant, so hovering IT keeps .group:hover true - but the
+   empty space between the two is not part of the group, so travelling up to the
+   slider dropped the hover and the panel vanished before the pointer arrived.
+   At the stock 12px offset this was survivable; at 42px it made the volume
+   unusable, which is exactly what was reported. */
+.nd-player .group.play-sounds:hover::before,
+.nd-player .group.play-sounds:focus-within::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 180px;
+  height: 48px;
+  /* No background: it exists only to keep :hover alive across the gap. */
+}
+
 /* The stock offset is 12px above the icon, which was tuned for a full-width bar
    where the icon sits near the top edge. In the pill the icon is centred in an
    80px surface, so 12px left the popover straddling the pill's top edge instead
@@ -282,8 +310,15 @@ const stylesheet = `
   backdrop-filter: ${GLASS_BLUR};
   -webkit-backdrop-filter: ${GLASS_BLUR};
   border-radius: 1000px !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5) !important;
+  /* NO border shorthand here. volumeCollapse.css insets the rail from the
+     control's ends using transparent 18px LEFT/RIGHT borders, and a shorthand
+     resets all four sides - which flattened them to 1px, ran the rail edge to
+     edge into the rounded ends, and left the handle hanging 6px outside the
+     pill at volume 0. The visible hairline goes on box-shadow instead, exactly
+     as that file does for the same reason. */
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 8px 28px rgba(0, 0, 0, 0.5) !important;
 }
 
 /* The pointer has to travel with the panel or it detaches and floats alone. */
