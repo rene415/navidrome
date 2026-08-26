@@ -265,6 +265,25 @@ textarea,
   background: ${GLASS} !important;
 }
 
+/* ---------- album header ---------- */
+/* The hierarchy was inverted: title 32px/600 and artist 16px/400, against the
+   client's 26px/700 title with a 26px/400 accent artist. Bigger AND lighter
+   where the client is smaller and heavier, with the artist shrunk to a
+   footnote instead of reading as the second half of the heading. */
+.MuiCardContent-root .MuiTypography-h5 ~ .MuiTypography-body1 a {
+  font-size: 26px !important;
+  font-weight: 400 !important;
+  color: ${ACCENT} !important;
+}
+
+/* Metadata line - the client sets this small, semibold and dim, which is what
+   keeps it from competing with the heading above it. */
+.MuiCardContent-root .MuiTypography-body1 {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: rgba(255, 255, 255, 0.64) !important;
+}
+
 /* ---------- artwork ---------- */
 .MuiCard-root {
   background: transparent !important;
@@ -747,7 +766,7 @@ export default {
     fontFamily:
       '-apple-system, BlinkMacSystemFont, Apple Color Emoji, SF Pro, SF Pro Icons, Helvetica Neue, Helvetica, Arial, sans-serif',
     h6: { fontSize: '1rem' },
-    h5: { fontSize: '2em', fontWeight: '600' },
+    h5: { fontSize: '26px', fontWeight: 700 },
   },
   palette: {
     primary: { main: ACCENT },
