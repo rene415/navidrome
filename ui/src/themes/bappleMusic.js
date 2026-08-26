@@ -494,8 +494,33 @@ textarea,
    bar. Inline means the slider is a sibling inside the same hovered group, so
    there is no journey to survive and nothing to cross. Simpler, and closer to
    what is being mimicked. */
+/* Resting state: present in the layout at zero width, not display:none.
+   display cannot be transitioned, which is why this used to pop in and out.
+   A zero-width element with clipped overflow collapses to nothing visually
+   while still being animatable.
+   
+   The side borders are part of the width: volumeCollapse.css insets the rail
+   with transparent 18px left/right borders, so leaving them at 18px would keep
+   the control 36px wide when "collapsed". They animate with it. */
+.nd-player .group.play-sounds .sound-operation {
+  display: block !important;
+  width: 0 !important;
+  border-left-width: 0 !important;
+  border-right-width: 0 !important;
+  margin-left: 0 !important;
+  opacity: 0;
+  overflow: hidden;
+  transition:
+    width 260ms cubic-bezier(0.32, 0.72, 0, 1),
+    border-left-width 260ms cubic-bezier(0.32, 0.72, 0, 1),
+    border-right-width 260ms cubic-bezier(0.32, 0.72, 0, 1),
+    margin-left 260ms cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 180ms ease;
+}
+
 .nd-player .group.play-sounds:hover .sound-operation,
 .nd-player .group.play-sounds:focus-within .sound-operation {
+  opacity: 1;
   position: relative !important;
   bottom: auto !important;
   left: auto !important;
@@ -523,7 +548,17 @@ textarea,
    back out of the way as soon as they move off. */
 .nd-player .group.play-sounds:focus-within:not(:hover):not(:has(:focus-visible))
   .sound-operation {
-  display: none !important;
+  width: 0 !important;
+  border-left-width: 0 !important;
+  border-right-width: 0 !important;
+  margin-left: 0 !important;
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nd-player .group.play-sounds .sound-operation {
+    transition: none;
+  }
 }
 
 /* No popover, so no pointer to it. */
