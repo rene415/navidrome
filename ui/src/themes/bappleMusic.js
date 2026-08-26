@@ -509,6 +509,23 @@ textarea,
   box-shadow: none !important;
 }
 
+/* Collapse again once the pointer leaves, even after the slider has been
+   clicked.
+   
+   The base rule expands on :focus-within, which is right for keyboard users but
+   means a mouse click leaves the slider stuck open - clicking to set the volume
+   focuses the handle, so it stays expanded until something else is clicked.
+   That reads as "it never collapses".
+   
+   :has(:focus-visible) is the distinction that matters: browsers set
+   focus-visible for keyboard focus but not for a plain mouse click. So keyboard
+   users keep the slider open while tabbing through it, and mouse users get it
+   back out of the way as soon as they move off. */
+.nd-player .group.play-sounds:focus-within:not(:hover):not(:has(:focus-visible))
+  .sound-operation {
+  display: none !important;
+}
+
 /* No popover, so no pointer to it. */
 .nd-player .group.play-sounds:hover::after,
 .nd-player .group.play-sounds:focus-within::after {
