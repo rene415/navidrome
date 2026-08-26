@@ -468,6 +468,75 @@ body:has(.audio-lists-panel.show) .bl-panel {
   display: none !important;
 }
 
+/* ---------- lyrics options dock ---------- */
+/* This carried no theme rules at all: a flat opaque Material panel sitting
+   inside a glass card, with 10.56px/700 uppercase letterspaced headers - an
+   idiom the client never uses anywhere.
+   
+   It matters more than its size suggests. Sync offset, playback speed,
+   translation, appearance and lyric override are things the client simply does
+   not have, so this is the app's strongest surface; leaving it unthemed made
+   the best feature look bolted onto the borrowed chassis. */
+.bl-dock__panel {
+  /* The stock max-height is viewport-derived (measured 533px) and was sized for
+     a full-screen overlay. Inside a 464px card the panel ran 27px past the top
+     edge and its first group was clipped away entirely. Capped to the card's own
+     height so it scrolls instead of overflowing - the card is
+     min(52vh, 540px), less room for the trigger and gaps. */
+  max-height: calc(min(52vh, 540px) - 104px) !important;
+  overflow-y: auto !important;
+  background: ${GLASS} !important;
+  backdrop-filter: ${GLASS_BLUR};
+  -webkit-backdrop-filter: ${GLASS_BLUR};
+  border-radius: 20px !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5) !important;
+}
+
+.bl-dock__trigger {
+  background: ${GLASS} !important;
+  backdrop-filter: ${GLASS_BLUR};
+  -webkit-backdrop-filter: ${GLASS_BLUR};
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: ${TEXT} !important;
+}
+
+/* Sentence case at a readable size, the way the client labels things - not
+   uppercase micro-caps with tracking. */
+.bl-dock__label {
+  font-size: 0.8rem !important;
+  font-weight: 600 !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+
+/* Selection means accent everywhere else in this theme; the dock alone used
+   white-fill/black-text, which read as a different design system. */
+.bl-dock__chip[aria-pressed='true'] {
+  background: ${ACCENT} !important;
+  color: #fff !important;
+  border-color: transparent !important;
+}
+
+.bl-dock__chip {
+  border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+.bl-dock__select,
+.bl-dock__stepper,
+.bl-dock__textarea {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  border-radius: 10px !important;
+  color: ${TEXT} !important;
+}
+
+.bl-dock__badge {
+  background: ${ACCENT} !important;
+  color: #fff !important;
+}
+
 /* ---------- scrollbars ---------- */
 ::-webkit-scrollbar {
   width: 8px;
