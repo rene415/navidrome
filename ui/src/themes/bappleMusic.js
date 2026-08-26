@@ -613,13 +613,17 @@ textarea,
 }
 
 .audio-lists-panel {
+  /* Height follows content up to a cap, rather than always filling the card.
+     A fixed height left ~55px of dead space beneath a short queue and made the
+     last row's hover tint stop abruptly in open space. */
+  height: auto !important;
+  max-height: min(52vh, 540px) !important;
   left: 50% !important;
   right: auto !important;
   transform: translateX(-50%) !important;
   bottom: 96px !important;
   top: auto !important;
   width: min(840px, calc(100% - 32px)) !important;
-  height: min(52vh, 540px) !important;
   border-radius: 24px !important;
   overflow: hidden !important;
   background: ${GLASS} !important;
@@ -627,6 +631,14 @@ textarea,
   -webkit-backdrop-filter: ${GLASS_BLUR};
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.22) !important;
+}
+
+/* The vendor fixes a height on the CONTENT element (measured 359px for a single
+   51px row), so height:auto on the panel alone changed nothing - the panel
+   faithfully wrapped a child that was still 359px tall. */
+.audio-lists-panel .audio-lists-panel-content {
+  height: auto !important;
+  max-height: calc(min(52vh, 540px) - 56px) !important;
 }
 
 .audio-lists-panel .audio-lists-panel-header {
@@ -674,6 +686,8 @@ body:has(.audio-lists-panel.show) .bl-panel {
      min(52vh, 540px), less room for the trigger and gaps. */
   max-height: calc(min(52vh, 540px) - 104px) !important;
   overflow-y: auto !important;
+  /* The last group was clipping mid-glyph against the scroll edge. */
+  padding-bottom: 14px !important;
   background: ${GLASS} !important;
   backdrop-filter: ${GLASS_BLUR};
   -webkit-backdrop-filter: ${GLASS_BLUR};
