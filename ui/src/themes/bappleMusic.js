@@ -43,6 +43,29 @@ const INSET = 8
 const RADIUS = 20
 
 const stylesheet = `
+/* ---------- type ---------- */
+/* typography.fontFamily only reaches MUI Typography components, so the nav
+   rendered in the Apple stack while the whole content column fell back to MUI's
+   default (Segoe UI / Roboto / Oxygen). Two different families on screen at
+   once is a stronger tell than any single wrong measurement. */
+body,
+input,
+button,
+select,
+textarea,
+.MuiTableCell-root {
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    'Apple Color Emoji',
+    'SF Pro',
+    'SF Pro Icons',
+    'Helvetica Neue',
+    Helvetica,
+    Arial,
+    sans-serif;
+}
+
 /* ---------- ground ---------- */
 [data-nd-shell] {
   background: ${GROUND};
@@ -238,7 +261,8 @@ const stylesheet = `
   left: 50% !important;
   right: auto !important;
   transform: translateX(-50%) !important;
-  width: min(940px, calc(100% - 32px)) !important;
+  width: min(840px, calc(100% - 32px)) !important;
+  height: 64px !important;
   bottom: 18px !important;
   border-radius: 1000px !important;
   background: ${GLASS} !important;
@@ -290,6 +314,72 @@ const stylesheet = `
 .nd-player .music-player-panel .img-content {
   border-radius: 6px !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Shrinking to the client's 56px is not reachable while this bar carries a
+   third text line the client does not have (elapsed/duration under the title).
+   64px is what fits once the artwork drops to 40px and the type tightens - a
+   real move from 80px toward 56px rather than a cosmetic one. */
+.nd-player .music-player-panel .img-content {
+  width: 40px !important;
+  height: 40px !important;
+}
+
+/* The control cluster was eating 559px of a 768px pill - six groups at 0 10px
+   margins plus 18px of padding on the play button - which left the title block
+   107px and truncated it to "RIDE O...". Tightening the cluster is the right
+   direction anyway: the client's controls sit far closer together than this. */
+.nd-player .player-content .group {
+  margin-left: 3px !important;
+  margin-right: 3px !important;
+}
+
+.nd-player .player-content .play-btn {
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+}
+
+.nd-player .player-content .audio-lists-btn {
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+}
+
+/* Ellipsis rather than a hard cut mid-glyph. */
+.nd-player .songTitle,
+.nd-player .songArtist,
+.nd-player .songAlbum {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.nd-player .panel-content .progress-bar-content {
+  padding-top: 5px !important;
+}
+
+.nd-player .songTitle {
+  font-size: 13px !important;
+}
+
+.nd-player .songArtist,
+.nd-player .songAlbum {
+  font-size: 12px !important;
+}
+
+.nd-player .current-time,
+.nd-player .duration {
+  font-size: 11px !important;
+}
+
+/* The client centres its transport in the content column, not the window - ours
+   sat 140px left of that. Only above the breakpoint where the sidebar is
+   actually present; below it the sidebar collapses and window-centred is right. */
+@media (min-width: 900px) {
+  .nd-player .music-player-panel,
+  .bl-panel,
+  .audio-lists-panel {
+    left: calc(50% + 124px) !important;
+  }
 }
 
 /* ---------- volume popover ---------- */
@@ -386,8 +476,8 @@ const stylesheet = `
   right: auto !important;
   left: 50% !important;
   transform: translateX(-50%) !important;
-  bottom: 112px !important;
-  width: min(940px, calc(100% - 32px)) !important;
+  bottom: 96px !important;
+  width: min(840px, calc(100% - 32px)) !important;
   height: min(52vh, 540px) !important;
   border-radius: 24px !important;
   overflow: hidden !important;
@@ -427,9 +517,9 @@ const stylesheet = `
   left: 50% !important;
   right: auto !important;
   transform: translateX(-50%) !important;
-  bottom: 112px !important;
+  bottom: 96px !important;
   top: auto !important;
-  width: min(940px, calc(100% - 32px)) !important;
+  width: min(840px, calc(100% - 32px)) !important;
   height: min(52vh, 540px) !important;
   border-radius: 24px !important;
   overflow: hidden !important;
