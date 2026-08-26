@@ -93,7 +93,15 @@ textarea,
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2) !important;
   /* Without an explicit height the drawer's flex height plus the 48px app bar
      ran it 9.7px past the viewport bottom, so its bottom corners never rendered. */
-  height: calc(100vh - 64px) !important;
+  /* sticky, NOT fixed. With a fixed height in normal flow the panel scrolled
+     away with the page; but position:fixed removes it from flow entirely, the
+     content column reclaims its space and the sidebar disappears outright -
+     which is exactly what happened on the first attempt. sticky pins it while
+     keeping it in flow, so the content keeps its left offset. */
+  position: sticky !important;
+  top: 8px !important;
+  align-self: flex-start !important;
+  height: calc(100vh - 72px) !important;
   overflow: hidden;
 }
 
@@ -108,7 +116,7 @@ textarea,
 /* ---------- pill navigation ---------- */
 .MuiDrawer-paper .MuiListItem-root {
   border-radius: 8px !important;
-  margin: 3px 12px !important;
+  margin: 4px 12px !important;
   padding-top: 5px !important;
   padding-bottom: 5px !important;
   width: auto !important;
@@ -140,8 +148,16 @@ textarea,
   min-width: 25px !important;
 }
 
-.MuiDrawer-paper a[aria-current='page'] .MuiListItemIcon-root {
+.MuiDrawer-paper a[aria-current='page'] .MuiListItemIcon-root,
+.MuiDrawer-paper a[aria-current='page'] {
   color: ${ACCENT} !important;
+}
+
+/* The label was still rendering 700 from elsewhere; the client keeps it regular
+   and lets colour alone carry the selection. */
+.MuiDrawer-paper a[aria-current='page'],
+.MuiDrawer-paper a[aria-current='page'] * {
+  font-weight: 400 !important;
 }
 
 /* Trimmed from MUI's 16px.
@@ -175,6 +191,7 @@ textarea,
   font-size: 12px !important;
   font-weight: 600 !important;
   color: rgba(255, 255, 255, 0.5) !important;
+  opacity: 1 !important;
   margin-top: 10px !important;
   /* Sentence case deliberately. Uppercase micro-caps with tracking is the
      Material idiom this theme already removed from the lyrics dock; using it
@@ -356,9 +373,21 @@ textarea,
    third text line the client does not have (elapsed/duration under the title).
    64px is what fits once the artwork drops to 40px and the type tightens - a
    real move from 80px toward 56px rather than a cosmetic one. */
-.nd-player .music-player-panel .img-content {
-  width: 40px !important;
-  height: 40px !important;
+/* The vendored player spins the cover like a record: animation 15s linear
+   infinite imgRotate. It leaves the artwork permanently tilted at a random
+   angle and is the only moving thing on screen - it reads as a third-party web
+   player instantly, and it undoes the credibility the glass work buys.
+   The earlier width rule did not take (measured 56x56), so size is pinned with
+   min/max as well as width. */
+.nd-player .music-player-panel .img-content,
+.nd-player .music-player-panel .img-content.img-rotate {
+  animation: none !important;
+  transform: none !important;
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  max-width: 44px !important;
+  border-radius: 6px !important;
 }
 
 /* The control cluster was eating 559px of a 768px pill - six groups at 0 10px
@@ -410,14 +439,6 @@ textarea,
 /* The client centres its transport in the content column, not the window - ours
    sat 140px left of that. Only above the breakpoint where the sidebar is
    actually present; below it the sidebar collapses and window-centred is right. */
-@media (min-width: 900px) {
-  .nd-player .music-player-panel,
-  .bl-panel,
-  .audio-lists-panel {
-    left: calc(50% + 124px) !important;
-  }
-}
-
 /* ---------- volume popover ---------- */
 /* The transport has to outrank the floating cards, or its popover cannot reach
    over them. The panel sits at z-index 99 inside its own stacking context (it
@@ -664,6 +685,24 @@ body:has(.audio-lists-panel.show) .bl-panel {
 }
 
 /* ---------- scrollbars ---------- */
+/* The vendored player declares its own thumb (bright green) and track (near
+   white) under .react-jinke-music-player-main, which outranks a bare
+   ::-webkit-scrollbar-thumb - a green-and-white bar ran down the queue and
+   lyrics panels and clipped over their 24px corners. */
+.react-jinke-music-player-main ::-webkit-scrollbar,
+.audio-lists-panel ::-webkit-scrollbar,
+.bl-panel ::-webkit-scrollbar {
+  width: 8px;
+  background-color: transparent !important;
+}
+
+.react-jinke-music-player-main ::-webkit-scrollbar-thumb,
+.audio-lists-panel ::-webkit-scrollbar-thumb,
+.bl-panel ::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.18) !important;
+  border-radius: 8px;
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -676,6 +715,29 @@ body:has(.audio-lists-panel.show) .bl-panel {
 
 ::-webkit-scrollbar-track {
   background: transparent;
+}
+
+/* ---------- alignment (must stay last) ---------- */
+/* These MUST come after the .bl-panel / .audio-lists-panel rules above. An
+   earlier version lived in a media query placed before them; media queries add
+   no specificity, so a later .bl-panel rule with the same specificity won
+   on source order and the cards stayed window-centred while the pill moved to
+   the content column - leaving two stacked glass cards 124px out of register.
+   An alignment bug costs more credibility than any stylistic divergence. */
+@media (min-width: 900px) {
+  .nd-player .music-player-panel,
+  .bl-panel,
+  .audio-lists-panel {
+    left: calc(50% + 124px) !important;
+  }
+}
+
+/* Below that width the sidebar collapses, so window-centred is correct - and
+   the pill must not run under it or off the window. */
+.nd-player .music-player-panel,
+.bl-panel,
+.audio-lists-panel {
+  max-width: calc(100vw - 32px) !important;
 }
 `
 
