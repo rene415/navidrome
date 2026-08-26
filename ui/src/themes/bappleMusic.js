@@ -312,6 +312,41 @@ const stylesheet = `
   color: ${ACCENT};
 }
 
+/* ---------- lyrics: floating panel, not full screen ---------- */
+/* The base panel is a full-screen overlay (fixed, top/left 0). Here it becomes
+   a rounded card floating directly above the transport, in the same glass
+   language as the sidebar and the pill.
+
+   The pill sits 18px off the bottom and is 80px tall, so its top edge is at
+   98px; 112px leaves a 14px breathing gap between the two.
+
+   overflow:hidden is wanted HERE (unlike on the pill): the panel's blurred
+   album-art layer is inset -12% and would otherwise spill past the rounded
+   corners as hard rectangular edges. */
+.bl-panel {
+  top: auto !important;
+  right: auto !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  bottom: 112px !important;
+  width: min(940px, calc(100% - 32px)) !important;
+  height: min(52vh, 540px) !important;
+  border-radius: 24px !important;
+  overflow: hidden !important;
+  background: ${GLASS} !important;
+  backdrop-filter: ${GLASS_BLUR};
+  -webkit-backdrop-filter: ${GLASS_BLUR};
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.62) !important;
+}
+
+/* The scrim exists to keep the library readable behind a FULL-screen overlay.
+   At this size the panel is its own surface, so the scrim only muddies the
+   artwork behind the lyrics. */
+.bl-panel .bl-panel__scrim {
+  background: rgba(0, 0, 0, 0.35) !important;
+}
+
 /* ---------- scrollbars ---------- */
 ::-webkit-scrollbar {
   width: 8px;
