@@ -409,6 +409,12 @@ main:has(.MuiCardContent-root .MuiTypography-h5) .column-rating {
   backdrop-filter: ${GLASS_BLUR};
   -webkit-backdrop-filter: ${GLASS_BLUR};
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.22) !important;
+  /* Transitions TRANSFORM, never left/width. The vendored player re-renders on
+     every progress tick, and animating layout properties on it forced a reflow
+     each frame - enough to wedge the renderer entirely during testing. transform
+     is composited and costs nothing per frame, which is also how the client
+     animates. */
+  transition: transform 420ms cubic-bezier(0.32, 0.72, 0, 1);
   /* NOT overflow:hidden. Clipping to the pill's curve also clipped the volume
      popover, which has to escape upward - it rendered sliced off mid-slider.
      Clipping is unnecessary anyway: the radius resolves to height/2 = 40px, so
@@ -833,6 +839,24 @@ body:has(.audio-lists-panel.show) .bl-panel {
 }
 
 /* ---------- pinned panels ---------- */
+/* Pinning moves the same object rather than swapping to a different one, so the
+   geometry animates between the two forms. */
+.bl-panel,
+.audio-lists-panel {
+  transition:
+    transform 420ms cubic-bezier(0.32, 0.72, 0, 1),
+    border-radius 420ms cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 240ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bl-panel,
+  .audio-lists-panel,
+  .nd-player .music-player-panel {
+    transition: none;
+  }
+}
+
 /* Double-clicking the lyrics or queue button pins that panel to the right as a
    full-height column, mirroring the navigation drawer on the left so the app
    reads as two rails around the content.
@@ -874,9 +898,22 @@ body:has(.audio-lists-panel.show) .bl-panel {
  * ~376px on the right; shifting the centre half that distance re-centres the
  * pill in what remains, and the width cap keeps it from reaching under the
  * panel on narrower windows. */
-:root[data-nd-dock] .nd-player .music-player-panel {
-  left: calc(50% - 64px) !important;
-  width: min(840px, calc(100vw - 440px)) !important;
+/* Gated on the panel being PRESENT, not merely on the mode being set. The dock
+   attribute survives closing the panel - that is deliberate, so re-opening
+   returns it to the rail - but it meant the transport stayed shifted with
+   nothing beside it. :has() ties the shift to something actually occupying the
+   rail. */
+/* Driven by a CUSTOM PROPERTY rather than a competing left declaration.
+   Two rules both setting left with !important turned into a cascade fight the
+   shift kept losing, even though its selector was more specific and
+   Element.matches confirmed it applied. With a variable there is only ever one
+   rule setting left, so there is nothing to lose to - the dock state just
+   changes the value it reads. */
+/* Shifts by TRANSFORM rather than left. The pill is already centred with
+   translateX(-50%), so the rail offset simply composes onto that - no second
+   rule competing for left, and it animates on the compositor. */
+:root[data-nd-dock-active] .nd-player .music-player-panel {
+  transform: translateX(calc(-50% - 188px)) !important;
 }
 
 /* ---------- alignment (must stay last) ---------- */
@@ -887,7 +924,13 @@ body:has(.audio-lists-panel.show) .bl-panel {
    the content column - leaving two stacked glass cards 124px out of register.
    An alignment bug costs more credibility than any stylistic divergence. */
 @media (min-width: 900px) {
-  :root:not([data-nd-dock]) .nd-player .music-player-panel,
+  /* The single source of truth for the transport's horizontal position. The
+     offset defaults to the content-column centre and drops to -64px while a
+     panel occupies the right rail. */
+  .nd-player .music-player-panel {
+    left: calc(50% + 124px) !important;
+  }
+
   :root:not([data-nd-dock='lyrics']) .bl-panel,
   :root:not([data-nd-dock='queue']) .audio-lists-panel {
     left: calc(50% + 124px) !important;

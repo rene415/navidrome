@@ -536,15 +536,51 @@ const Player = () => {
     return () => document.removeEventListener('dblclick', onDoubleClick)
   }, [])
 
-  // Published as an attribute so a theme can lay the pinned panel out however
-  // it likes - the behaviour lives here, the appearance stays in CSS.
+  // Published as attributes so a theme can lay the pinned panel out however it
+  // likes - the behaviour lives here, the appearance stays in CSS.
+  //
+  // TWO attributes, deliberately. `data-nd-dock` is the mode and survives the
+  // panel being closed, so re-opening returns it to the rail.
+  // `data-nd-dock-active` is only present while a panel is actually occupying
+  // the rail, and is what layout (such as making room for it) should key off.
+  //
+  // Why report it rather than let CSS work it out with :has()? Because the
+  // theme then has a plain attribute to match, with no dependency on how :has()
+  // invalidates - and because the queue's open state is a class on a vendored
+  // element, which :has() would have to watch anyway.
   useEffect(() => {
     dockRef.current = dock
     const root = document.documentElement
     if (dock) root.setAttribute('data-nd-dock', dock)
     else root.removeAttribute('data-nd-dock')
-    return () => root.removeAttribute('data-nd-dock')
-  }, [dock])
+
+    const sync = () => {
+      const visible =
+        dock === 'lyrics'
+          ? !!document.querySelector('.bl-panel')
+          : dock === 'queue'
+            ? !!document.querySelector('.audio-lists-panel.show')
+            : false
+      if (visible) root.setAttribute('data-nd-dock-active', dock)
+      else root.removeAttribute('data-nd-dock-active')
+    }
+    sync()
+
+    // The queue's open state lives in a class the vendored player toggles, so
+    // there is nothing to subscribe to but the DOM itself.
+    const observer = new MutationObserver(sync)
+    observer.observe(document.body, {
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class'],
+      childList: true,
+    })
+    return () => {
+      observer.disconnect()
+      root.removeAttribute('data-nd-dock')
+      root.removeAttribute('data-nd-dock-active')
+    }
+  }, [dock, lyricsOpen])
 
   // Dismiss the lyrics card and the play queue on Escape, or when the pointer
   // goes down outside them.
