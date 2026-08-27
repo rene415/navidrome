@@ -414,7 +414,13 @@ main:has(.MuiCardContent-root .MuiTypography-h5) .column-rating {
      each frame - enough to wedge the renderer entirely during testing. transform
      is composited and costs nothing per frame, which is also how the client
      animates. */
-  transition: transform 420ms cubic-bezier(0.32, 0.72, 0, 1);
+  /* The 320ms DELAY matters as much as the duration. Pinning and unpinning are
+     double-clicks on buttons that live in this bar: without a delay the first
+     click starts the slide, the bar moves out from under the pointer, and the
+     second click lands on a different control - so the gesture never completes.
+     Holding still until the double-click window has passed keeps the target
+     under the finger. */
+  transition: transform 420ms cubic-bezier(0.32, 0.72, 0, 1) 320ms;
   /* NOT overflow:hidden. Clipping to the pill's curve also clipped the volume
      popover, which has to escape upward - it rendered sliced off mid-slider.
      Clipping is unnecessary anyway: the radius resolves to height/2 = 40px, so

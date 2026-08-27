@@ -57,6 +57,8 @@ const Player = () => {
   // The double-click listener is registered once, so it cannot close over
   // `dock` - it would always read null.
   const dockRef = useRef(null)
+  // Mirrors of the state for listeners that must be registered exactly once.
+  const lyricsOpenRef = useRef(false)
   const isDesktop = useMediaQuery('(min-width:810px)')
   const isMobilePlayer =
     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
@@ -492,13 +494,24 @@ const Player = () => {
     }
   }, [audioInstance])
 
-  // Double-clicking a panel's own button pins it to the side as a column,
-  // the way the navigation drawer sits. Double-clicking again unpins it.
+  // Double-clicking a panel's own button pins it to the side as a column, the
+  // way the navigation drawer sits. Double-clicking again unpins it.
   //
-  // Delegated rather than bound to the buttons, because the transport's queue
-  // button belongs to the vendored player and is remounted as tracks change.
+  // Doubles are detected by TIMING two clicks, not by listening for dblclick.
+  // The browser only emits dblclick when both clicks land on the same node, and
+  // the vendored player re-renders its transport on the first click - replacing
+  // the queue button - so the pair never matches and dblclick never fires for
+  // it. Timing the clicks is immune to the node being swapped underneath.
   useEffect(() => {
-    const onDoubleClick = (e) => {
+    let lastTarget = null
+    let lastTime = 0
+    // Set while this code clicks a button itself. Those synthetic clicks reach
+    // the same capture listener, and counting them could pair with a real click
+    // and be misread as a double.
+    let selfClicking = false
+
+    const onClick = (e) => {
+      if (selfClicking) return
       const el = e.target instanceof Element ? e.target : null
       if (!el) return
       const which = el.closest('[data-testid="lyrics-button"]')
@@ -507,33 +520,62 @@ const Player = () => {
           ? 'queue'
           : null
       if (!which) return
+
+      // e.timeStamp, NOT Date.now(). Date.now() records when this handler RAN,
+      // and the first click mounts the lyrics panel - an expensive render that
+      // blocks the main thread. Two clicks dispatched 110ms apart were observed
+      // arriving 791ms apart by that measure, so every double was missed.
+      // timeStamp records when the click actually happened, which is what the
+      // user's gesture speed really was.
+      const now = e.timeStamp
+      const isDouble = which === lastTarget && now - lastTime < 500
+      lastTime = now
+      lastTarget = which
+      if (!isDouble) return
+      // Consumed as a double; the next click starts a fresh pair rather than
+      // chaining into a third.
+      lastTarget = null
+
       const unpinning = dockRef.current === which
       setDock(unpinning ? null : which)
-      if (unpinning) return
 
-      // Only one panel occupies the side rail, so pinning one has to put the
-      // other away. Without this the previously pinned panel stayed mounted
-      // underneath and the newer one simply covered it.
-      //
-      // A double click also delivers two single clicks, which toggle the target
-      // twice and leave it closed, so the pinned panel is re-opened here.
       const queueShowing = () =>
         !!document.querySelector('.audio-lists-panel.show')
-      const toggleQueue = () =>
-        document.querySelector('.nd-player .audio-lists-btn')?.click()
-
-      if (which === 'lyrics') {
-        setLyricsOpen(true)
-        if (queueShowing()) toggleQueue()
-      } else {
-        setLyricsOpen(false)
-        window.setTimeout(() => {
-          if (!queueShowing()) toggleQueue()
-        }, 0)
+      const toggleQueue = () => {
+        selfClicking = true
+        try {
+          document.querySelector('.nd-player .audio-lists-btn')?.click()
+        } finally {
+          selfClicking = false
+        }
       }
+
+      // Both clicks of the pair already toggled the panel, so it is back where
+      // it started. Put it into the state the gesture implies.
+      //
+      // Deferred, and that is essential: this runs in the CAPTURE phase, so the
+      // button's own toggle has not fired yet. Setting the state here means
+      // React's `open => !open` runs afterwards and undoes it - which showed up
+      // as the panel pinning correctly and then immediately closing itself.
+      if (unpinning) return
+      window.setTimeout(() => {
+        if (which === 'lyrics') {
+          setLyricsOpen(true)
+          if (queueShowing()) toggleQueue()
+        } else {
+          setLyricsOpen(false)
+          if (!queueShowing()) toggleQueue()
+        }
+      }, 0)
     }
-    document.addEventListener('dblclick', onDoubleClick)
-    return () => document.removeEventListener('dblclick', onDoubleClick)
+
+    // CAPTURE phase. The lyrics button's own handler calls stopPropagation, and
+    // React's synthetic stopPropagation stops the native event too - so a
+    // bubble-phase listener on document never sees those clicks at all, while
+    // it does see the vendored queue button's. Capture runs before the target's
+    // handler, so it cannot be suppressed by either.
+    document.addEventListener('click', onClick, true)
+    return () => document.removeEventListener('click', onClick, true)
   }, [])
 
   // Published as attributes so a theme can lay the pinned panel out however it
@@ -548,6 +590,10 @@ const Player = () => {
   // theme then has a plain attribute to match, with no dependency on how :has()
   // invalidates - and because the queue's open state is a class on a vendored
   // element, which :has() would have to watch anyway.
+  useEffect(() => {
+    lyricsOpenRef.current = lyricsOpen
+  }, [lyricsOpen])
+
   useEffect(() => {
     dockRef.current = dock
     const root = document.documentElement
@@ -608,18 +654,33 @@ const Player = () => {
       const el = e.target instanceof Element ? e.target : null
       if (!el || el.closest('.nd-player')) return
       // A pinned panel is furniture, not a popover - it stays until unpinned.
-      if (lyricsOpen && dock !== 'lyrics' && !el.closest('.bl-panel')) {
+      const dockNow = dockRef.current
+      if (lyricsOpenRef.current && dockNow !== 'lyrics' && !el.closest('.bl-panel')) {
         setLyricsOpen(false)
       }
-      if (dock !== 'queue' && !el.closest('.audio-lists-panel')) closeQueue()
+      if (dockNow !== 'queue' && !el.closest('.audio-lists-panel')) closeQueue()
     }
 
     const onKey = (e) => {
-      if (e.key !== 'Escape' || dock === 'queue') return
+      if (e.key !== 'Escape') return
+      // A pinned panel is furniture, not a popover, so Escape leaves it alone -
+      // for BOTH panels. Guarding only the queue was not enough: the lyrics
+      // panel runs its own Escape handler, so a pinned lyrics rail closed
+      // itself. Swallowing the key here stops that handler seeing it, which
+      // works because this listener is registered first and captures.
+      if (dockRef.current) {
+        // stopImmediatePropagation, not stopPropagation. The lyrics panel's own
+        // Escape handler is bound to the SAME target (window), and
+        // stopPropagation only stops the event travelling to other elements -
+        // it does nothing about further listeners on this one. That is why a
+        // pinned rail still closed itself on Escape after the first fix.
+        e.stopImmediatePropagation()
+        return
+      }
       // Queue first: it is drawn over the lyrics, so it is what the user sees
       // and therefore what they expect Escape to dismiss. Stopping propagation
       // keeps the lyrics panel's own Escape handler from closing both at once.
-      if (closeQueue()) e.stopPropagation()
+      if (closeQueue()) e.stopImmediatePropagation()
     }
 
     document.addEventListener('pointerdown', onPointerDown)
