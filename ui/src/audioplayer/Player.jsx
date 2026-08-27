@@ -52,6 +52,8 @@ const Player = () => {
   const stoppedRef = useRef(false)
   const [audioInstance, setAudioInstance] = useState(null)
   const [lyricsOpen, setLyricsOpen] = useState(false)
+  // Which panel, if any, is pinned to the side as a column: 'lyrics' | 'queue'.
+  const [dock, setDock] = useState(null)
   const isDesktop = useMediaQuery('(min-width:810px)')
   const isMobilePlayer =
     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
@@ -486,6 +488,94 @@ const Player = () => {
       audioInstance.removeEventListener('seeked', handleSeeked)
     }
   }, [audioInstance])
+
+  // Double-clicking a panel's own button pins it to the side as a column,
+  // the way the navigation drawer sits. Double-clicking again unpins it.
+  //
+  // Delegated rather than bound to the buttons, because the transport's queue
+  // button belongs to the vendored player and is remounted as tracks change.
+  useEffect(() => {
+    const onDoubleClick = (e) => {
+      const el = e.target instanceof Element ? e.target : null
+      if (!el) return
+      const which = el.closest('[data-testid="lyrics-button"]')
+        ? 'lyrics'
+        : el.closest('.audio-lists-btn')
+          ? 'queue'
+          : null
+      if (!which) return
+      setDock((current) => (current === which ? null : which))
+      // A double click also delivers two single clicks, which toggle the panel
+      // twice and leave it closed. Re-open whichever was just pinned.
+      if (which === 'lyrics') setLyricsOpen(true)
+      else {
+        window.setTimeout(() => {
+          if (!document.querySelector('.audio-lists-panel.show')) {
+            document.querySelector('.nd-player .audio-lists-btn')?.click()
+          }
+        }, 0)
+      }
+    }
+    document.addEventListener('dblclick', onDoubleClick)
+    return () => document.removeEventListener('dblclick', onDoubleClick)
+  }, [])
+
+  // Published as an attribute so a theme can lay the pinned panel out however
+  // it likes - the behaviour lives here, the appearance stays in CSS.
+  useEffect(() => {
+    const root = document.documentElement
+    if (dock) root.setAttribute('data-nd-dock', dock)
+    else root.removeAttribute('data-nd-dock')
+    return () => root.removeAttribute('data-nd-dock')
+  }, [dock])
+
+  // Dismiss the lyrics card and the play queue on Escape, or when the pointer
+  // goes down outside them.
+  //
+  // This lives here rather than in a theme because it is behaviour, not
+  // appearance - CSS cannot observe a click landing elsewhere. It is written so
+  // that it changes nothing for themes whose lyrics panel is full-screen: there,
+  // .bl-panel covers the viewport, so a pointerdown can never land outside it.
+  //
+  // Clicks inside the transport are deliberately exempt. The bar is part of the
+  // same cluster as the panels, and pausing a track should not dismiss the
+  // lyrics you were reading.
+  useEffect(() => {
+    const closeQueue = () => {
+      if (!document.querySelector('.audio-lists-panel.show')) return false
+      const btn = document.querySelector('.nd-player .audio-lists-btn')
+      if (!btn) return false
+      // The vendored panel owns its own open state, so the only supported way
+      // to close it from outside is to drive its own toggle.
+      btn.click()
+      return true
+    }
+
+    const onPointerDown = (e) => {
+      const el = e.target instanceof Element ? e.target : null
+      if (!el || el.closest('.nd-player')) return
+      // A pinned panel is furniture, not a popover - it stays until unpinned.
+      if (lyricsOpen && dock !== 'lyrics' && !el.closest('.bl-panel')) {
+        setLyricsOpen(false)
+      }
+      if (dock !== 'queue' && !el.closest('.audio-lists-panel')) closeQueue()
+    }
+
+    const onKey = (e) => {
+      if (e.key !== 'Escape' || dock === 'queue') return
+      // Queue first: it is drawn over the lyrics, so it is what the user sees
+      // and therefore what they expect Escape to dismiss. Stopping propagation
+      // keeps the lyrics panel's own Escape handler from closing both at once.
+      if (closeQueue()) e.stopPropagation()
+    }
+
+    document.addEventListener('pointerdown', onPointerDown)
+    window.addEventListener('keydown', onKey, true)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      window.removeEventListener('keydown', onKey, true)
+    }
+  }, [lyricsOpen, dock])
 
   // Publish the active theme's accent as a CSS custom property.
   //
