@@ -54,6 +54,9 @@ const Player = () => {
   const [lyricsOpen, setLyricsOpen] = useState(false)
   // Which panel, if any, is pinned to the side as a column: 'lyrics' | 'queue'.
   const [dock, setDock] = useState(null)
+  // The double-click listener is registered once, so it cannot close over
+  // `dock` - it would always read null.
+  const dockRef = useRef(null)
   const isDesktop = useMediaQuery('(min-width:810px)')
   const isMobilePlayer =
     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
@@ -504,15 +507,28 @@ const Player = () => {
           ? 'queue'
           : null
       if (!which) return
-      setDock((current) => (current === which ? null : which))
-      // A double click also delivers two single clicks, which toggle the panel
-      // twice and leave it closed. Re-open whichever was just pinned.
-      if (which === 'lyrics') setLyricsOpen(true)
-      else {
+      const unpinning = dockRef.current === which
+      setDock(unpinning ? null : which)
+      if (unpinning) return
+
+      // Only one panel occupies the side rail, so pinning one has to put the
+      // other away. Without this the previously pinned panel stayed mounted
+      // underneath and the newer one simply covered it.
+      //
+      // A double click also delivers two single clicks, which toggle the target
+      // twice and leave it closed, so the pinned panel is re-opened here.
+      const queueShowing = () =>
+        !!document.querySelector('.audio-lists-panel.show')
+      const toggleQueue = () =>
+        document.querySelector('.nd-player .audio-lists-btn')?.click()
+
+      if (which === 'lyrics') {
+        setLyricsOpen(true)
+        if (queueShowing()) toggleQueue()
+      } else {
+        setLyricsOpen(false)
         window.setTimeout(() => {
-          if (!document.querySelector('.audio-lists-panel.show')) {
-            document.querySelector('.nd-player .audio-lists-btn')?.click()
-          }
+          if (!queueShowing()) toggleQueue()
         }, 0)
       }
     }
@@ -523,6 +539,7 @@ const Player = () => {
   // Published as an attribute so a theme can lay the pinned panel out however
   // it likes - the behaviour lives here, the appearance stays in CSS.
   useEffect(() => {
+    dockRef.current = dock
     const root = document.documentElement
     if (dock) root.setAttribute('data-nd-dock', dock)
     else root.removeAttribute('data-nd-dock')

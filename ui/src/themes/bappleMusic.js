@@ -853,9 +853,30 @@ body:has(.audio-lists-panel.show) .bl-panel {
   border-radius: 20px !important;
 }
 
+/* Lyric type is sized for a wide card; in a 360px rail the same size wraps
+   every line three deep. Scaled down while pinned only - the user's own text
+   size preference still applies when the panel is floating. */
+:root[data-nd-dock='lyrics'] .bl-panel .bl-root {
+  font-size: clamp(0.95rem, 1.15vw, 1.35rem) !important;
+}
+
 :root[data-nd-dock='queue'] .audio-lists-panel .audio-lists-panel-content {
   max-height: none !important;
   height: 100% !important;
+}
+
+/* With a panel pinned to the right rail, the transport has to live BETWEEN the
+   two rails rather than under one of them. Left alone it stayed centred on the
+   content column and the pinned panel covered its right end - which is where
+   the elapsed/duration readout sits, so the time disappeared.
+ *
+ * The rail is 360px plus its 8px inset and an 8px gap, so the usable span loses
+ * ~376px on the right; shifting the centre half that distance re-centres the
+ * pill in what remains, and the width cap keeps it from reaching under the
+ * panel on narrower windows. */
+:root[data-nd-dock] .nd-player .music-player-panel {
+  left: calc(50% - 64px) !important;
+  width: min(840px, calc(100vw - 440px)) !important;
 }
 
 /* ---------- alignment (must stay last) ---------- */
@@ -866,7 +887,7 @@ body:has(.audio-lists-panel.show) .bl-panel {
    the content column - leaving two stacked glass cards 124px out of register.
    An alignment bug costs more credibility than any stylistic divergence. */
 @media (min-width: 900px) {
-  .nd-player .music-player-panel,
+  :root:not([data-nd-dock]) .nd-player .music-player-panel,
   :root:not([data-nd-dock='lyrics']) .bl-panel,
   :root:not([data-nd-dock='queue']) .audio-lists-panel {
     left: calc(50% + 124px) !important;
