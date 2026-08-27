@@ -239,9 +239,11 @@ textarea,
    Spacing is the actual fix requested; the tone change is what stops seven
    spaced-out red pills from simply being a wider wall of red. */
 .MuiButton-root.MuiButton-root {
+  /* Translucent, but deliberately NOT blurred. Every button in the app matches
+     this selector, and a backdrop-filter promotes each one to its own composited
+     layer - at blur(60px) that was enough to make the whole app feel sluggish.
+     The blur belongs on the few large surfaces where it actually reads. */
   background: ${GLASS} !important;
-  backdrop-filter: ${GLASS_BLUR};
-  -webkit-backdrop-filter: ${GLASS_BLUR};
   color: ${TEXT} !important;
   margin: 0 8px 10px 0 !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
@@ -266,8 +268,6 @@ textarea,
 .MuiButton-root.MuiButton-root[aria-label='Play'] {
   background: #fff !important;
   border-color: transparent !important;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
 }
 
 .MuiButton-root.MuiButton-root[aria-label='Play'] svg,

@@ -603,7 +603,7 @@ const Player = () => {
     const sync = () => {
       const visible =
         dock === 'lyrics'
-          ? !!document.querySelector('.bl-panel')
+          ? lyricsOpen
           : dock === 'queue'
             ? !!document.querySelector('.audio-lists-panel.show')
             : false
@@ -612,17 +612,28 @@ const Player = () => {
     }
     sync()
 
-    // The queue's open state lives in a class the vendored player toggles, so
-    // there is nothing to subscribe to but the DOM itself.
-    const observer = new MutationObserver(sync)
-    observer.observe(document.body, {
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['class'],
-      childList: true,
-    })
+    // Only the QUEUE needs watching, and only while it is the pinned panel: its
+    // open state is a class the vendored player toggles, whereas the lyrics
+    // panel's is React state we already hold.
+    //
+    // Scoped to that one element. An earlier version observed document.body
+    // with subtree, attributes AND childList - in a player whose DOM churns on
+    // every progress tick, so it fired constantly and ran two document-wide
+    // querySelectors each time, even when nothing was pinned. That made the
+    // whole app sluggish.
+    let observer = null
+    if (dock === 'queue') {
+      const panel = document.querySelector('.audio-lists-panel')
+      if (panel) {
+        observer = new MutationObserver(sync)
+        observer.observe(panel, {
+          attributes: true,
+          attributeFilter: ['class'],
+        })
+      }
+    }
     return () => {
-      observer.disconnect()
+      if (observer) observer.disconnect()
       root.removeAttribute('data-nd-dock')
       root.removeAttribute('data-nd-dock-active')
     }
