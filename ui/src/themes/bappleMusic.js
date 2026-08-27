@@ -345,6 +345,50 @@ textarea,
   border-bottom-right-radius: 8px;
 }
 
+/* ---------- album track list ---------- */
+/* Matched to the client's track list, which shows only number, title, duration
+   and an overflow affordance - no header row, no checkbox, and no column
+   repeating the album artist on every line.
+ *
+ * Scoped with :has() to pages carrying an album header, so the Songs list keeps
+ * its Artist, Quality and Rating columns. There they are the point; on an album
+ * page they are noise, and the artist column repeats one name down the page.
+ *
+ * Uses the column-* class names rather than nth-child: the two views have
+ * different column counts and orders, so positional selectors would strip the
+ * wrong things on one of them.
+ */
+main:has(.MuiCardContent-root .MuiTypography-h5) thead {
+  display: none !important;
+}
+
+main:has(.MuiCardContent-root .MuiTypography-h5) tbody td:first-child {
+  display: none !important;
+}
+
+main:has(.MuiCardContent-root .MuiTypography-h5) .column-artist,
+main:has(.MuiCardContent-root .MuiTypography-h5) .column-quality,
+main:has(.MuiCardContent-root .MuiTypography-h5) .column-rating {
+  display: none !important;
+}
+
+/* The client sets number and duration at 13px/400 in 64% white, and lets the
+   title alone carry full contrast. */
+.column-trackNumber,
+.column-duration {
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  color: rgba(255, 255, 255, 0.64) !important;
+  width: 1%;
+  white-space: nowrap;
+}
+
+.column-title,
+.column-title a {
+  font-size: 13px !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
 /* ---------- transport: floating pill ---------- */
 /* The client's bar is a detached, fully-rounded pill: measured 668x56 at
    radius 1000px, sitting 89px off the bottom, over blur(60px) saturate(2).
@@ -788,6 +832,32 @@ body:has(.audio-lists-panel.show) .bl-panel {
   background: transparent;
 }
 
+/* ---------- pinned panels ---------- */
+/* Double-clicking the lyrics or queue button pins that panel to the right as a
+   full-height column, mirroring the navigation drawer on the left so the app
+   reads as two rails around the content.
+ *
+ * Pinned panels keep the same glass and radius as their floating form - only
+ * the geometry changes - so pinning feels like moving the same object rather
+ * than swapping to a different one. */
+:root[data-nd-dock='lyrics'] .bl-panel,
+:root[data-nd-dock='queue'] .audio-lists-panel {
+  left: auto !important;
+  right: 8px !important;
+  transform: none !important;
+  top: 56px !important;
+  bottom: 90px !important;
+  width: min(360px, 32vw) !important;
+  height: auto !important;
+  max-height: none !important;
+  border-radius: 20px !important;
+}
+
+:root[data-nd-dock='queue'] .audio-lists-panel .audio-lists-panel-content {
+  max-height: none !important;
+  height: 100% !important;
+}
+
 /* ---------- alignment (must stay last) ---------- */
 /* These MUST come after the .bl-panel / .audio-lists-panel rules above. An
    earlier version lived in a media query placed before them; media queries add
@@ -797,8 +867,8 @@ body:has(.audio-lists-panel.show) .bl-panel {
    An alignment bug costs more credibility than any stylistic divergence. */
 @media (min-width: 900px) {
   .nd-player .music-player-panel,
-  .bl-panel,
-  .audio-lists-panel {
+  :root:not([data-nd-dock='lyrics']) .bl-panel,
+  :root:not([data-nd-dock='queue']) .audio-lists-panel {
     left: calc(50% + 124px) !important;
   }
 }
